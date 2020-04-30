@@ -13,20 +13,23 @@ class Synchronized {
 public:
   explicit Synchronized(T initial = T()) : value(move(initial)) {}
 
+  template <typename ValueType>
   struct Access {
-    T& ref_to_value;
+    ValueType& ref_to_value;
     lock_guard<mutex> lock;
   };
 
-  Access GetAccess() {
-    return {value, lock_guard(value_mutex)};
+  Access<T> GetAccess() {
+    return {value, lock_guard<mutex>(value_mutex)};
   }
 
-  //??? GetAccess() const;
+  Access<const T> GetAccess() const {
+    return {value, lock_guard<mutex>(value_mutex)};
+  }
 
 private:
   T value;
-  mutex value_mutex;
+  mutable mutex value_mutex;
 };
 
 void TestConcurrentUpdate() {
@@ -79,8 +82,7 @@ vector<int> Consume(Synchronized<deque<int>>& common_queue) {
   }
 }
 
-//void Log(const Synchronized<deque<int>>& common_queue, ostream& out) {
-void Log(Synchronized<deque<int>>& common_queue, ostream& out) {
+void Log(const Synchronized<deque<int>>& common_queue, ostream& out) {
   for (int i = 0; i < 100; ++i) {
     out << "Queue size is " << common_queue.GetAccess().ref_to_value.size() << '\n';
   }
@@ -91,8 +93,7 @@ void TestProducerConsumer() {
   ostringstream log;
 
   auto consumer = async(Consume, ref(common_queue));
-  //auto logger = async(Log, cref(common_queue), ref(log));
-  auto logger = async(Log, ref(common_queue), ref(log));
+  auto logger = async(Log, cref(common_queue), ref(log));
 
   const size_t item_count = 100000;
   for (size_t i = 1; i <= item_count; ++i) {
