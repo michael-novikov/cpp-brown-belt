@@ -11,13 +11,22 @@ using namespace std;
 template <typename T>
 class Synchronized {
 public:
-  explicit Synchronized(T initial = T());
+  explicit Synchronized(T initial = T()) : value(move(initial)) {}
 
-  ??? GetAccess();
-  ??? GetAccess() const;
+  struct Access {
+    T& ref_to_value;
+    lock_guard<mutex> lock;
+  };
+
+  Access GetAccess() {
+    return {value, lock_guard(value_mutex)};
+  }
+
+  //??? GetAccess() const;
 
 private:
   T value;
+  mutex value_mutex;
 };
 
 void TestConcurrentUpdate() {
@@ -70,7 +79,8 @@ vector<int> Consume(Synchronized<deque<int>>& common_queue) {
   }
 }
 
-void Log(const Synchronized<deque<int>>& common_queue, ostream& out) {
+//void Log(const Synchronized<deque<int>>& common_queue, ostream& out) {
+void Log(Synchronized<deque<int>>& common_queue, ostream& out) {
   for (int i = 0; i < 100; ++i) {
     out << "Queue size is " << common_queue.GetAccess().ref_to_value.size() << '\n';
   }
@@ -81,7 +91,8 @@ void TestProducerConsumer() {
   ostringstream log;
 
   auto consumer = async(Consume, ref(common_queue));
-  auto logger = async(Log, cref(common_queue), ref(log));
+  //auto logger = async(Log, cref(common_queue), ref(log));
+  auto logger = async(Log, ref(common_queue), ref(log));
 
   const size_t item_count = 100000;
   for (size_t i = 1; i <= item_count; ++i) {
