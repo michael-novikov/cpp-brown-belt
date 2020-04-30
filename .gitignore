@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+# Backup files
+*.bak
+
+# Project build directory
+build/
+
+# Project temp files
+.clangd/
+compile_commands.json
