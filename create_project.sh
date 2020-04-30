@@ -14,7 +14,7 @@ compiler_commands_file='compile_commands.json'
 mkdir $project_dir
 mkdir -p $build_dir
 
-cp $project_file_template $project_dir
+cp $project_file_template $project_file
 
 eval "sed -i.bak 's/THIS_PROJECT_NAME/$project_name/g' $project_file"
 rm ${project_file}.bak
