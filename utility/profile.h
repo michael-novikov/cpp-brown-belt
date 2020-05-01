@@ -17,7 +17,7 @@ public:
     auto dur = finish - start;
     std::cerr << message
       << std::chrono::duration_cast<std::chrono::milliseconds>(dur).count()
-      << " ms" << endl;
+      << " ms" << std::endl;
   }
 private:
   std::string message;
