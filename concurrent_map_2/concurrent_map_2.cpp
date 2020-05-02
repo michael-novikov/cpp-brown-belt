@@ -21,7 +21,6 @@ public:
   };
 
   struct ReadAccess {
-    lock_guard<mutex> guard;
     const V& ref_to_value;
   };
 
@@ -38,7 +37,7 @@ public:
     }
 
     ReadAccess GetValue(const K& key) const {
-        return {lock_guard(bucket_mutex), data.at(key)};
+        return {data.at(key)};
     }
   };
 
@@ -102,7 +101,7 @@ void RunConcurrentUpdates(
 }
 
 void TestConcurrentUpdate() {
-  const size_t thread_count = 3;
+  const size_t thread_count = 8;
   const size_t key_count = 50000;
 
   ConcurrentMap<int, int> cm(thread_count);
@@ -111,7 +110,7 @@ void TestConcurrentUpdate() {
   const auto result = std::as_const(cm).BuildOrdinaryMap();
   ASSERT_EQUAL(result.size(), key_count);
   for (auto& [k, v] : result) {
-    AssertEqual(v, 6, "Key = " + to_string(k));
+    AssertEqual(v, 16, "Key = " + to_string(k));
   }
 }
 
