@@ -89,7 +89,29 @@ public:
     return degree < coeffs_.size() ? coeffs_[degree] : 0;
   }
 
-  // Реализуйте неконстантную версию operator[]
+  class WriteAccess {
+  public:
+    WriteAccess(size_t degree, Polynomial &poly)
+        : degree_(degree), poly_(poly) {}
+
+    WriteAccess operator =(const T& x) {
+      if (degree_ >= poly_.coeffs_.size() && x != 0) {
+        poly_.coeffs_.resize(degree_ + 1);
+      }
+      poly_.coeffs_[degree_] = x;
+      return {degree_, poly_};
+    }
+
+    operator T() const { return std::as_const(poly_)[degree_]; }
+
+  private:
+    size_t degree_;
+    Polynomial &poly_;
+  };
+
+  WriteAccess operator [](size_t degree) {
+    return {degree, *this};
+  }
 
   T operator ()(const T& x) const {
     T res = 0;
