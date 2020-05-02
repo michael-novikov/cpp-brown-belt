@@ -20,6 +20,7 @@ eval "sed -i.bak 's/THIS_PROJECT_NAME/$project_name/g' $project_file"
 rm ${project_file}.bak
 
 wget -O $main_file_name "$main_file_link"
+dos2unix $main_file_name
 
 cd $build_dir
 eval $generate_build_files_command
