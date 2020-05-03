@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <new>
 #include <string>
 #include <queue>
 #include <stdexcept>
@@ -80,8 +81,37 @@ void TestObjectPool() {
   pool.Deallocate(p1);
 }
 
+void run() {
+  static int counter{0};
+  struct Counted {
+    Counted() { counter++; }
+    ~Counted() { counter--; }
+  };
+
+  {
+    ObjectPool<Counted> pool;
+
+    cout << "Counter before loop = " << counter << endl;
+
+    try {
+      for (int i = 0; i < 1'000; ++i) {
+        cout << "Allocating object #" << i << endl;
+        pool.Allocate();
+      }
+    } catch (const std::bad_alloc& e) {
+      cout << e.what() << endl;
+    }
+
+    cout << "Counter after loop = " << counter << endl;
+  }
+  cout << "Counter before exit = " << counter << endl;
+}
+
 int main() {
   TestRunner tr;
   RUN_TEST(tr, TestObjectPool);
+
+  run();
+
   return 0;
 }
