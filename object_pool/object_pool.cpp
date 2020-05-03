@@ -11,15 +11,51 @@ using namespace std;
 template <class T>
 class ObjectPool {
 public:
-  T* Allocate();
-  T* TryAllocate();
+  T* Allocate() {
+    if (free.empty()) {
+      free.push(new T);
+    }
+    return GetFromFreeQueue();
+  }
 
-  void Deallocate(T* object);
+  T* TryAllocate() {
+    if (free.empty()) {
+      return nullptr;
+    }
+    return GetFromFreeQueue();
+  }
 
-  ~ObjectPool();
+  void Deallocate(T* object) {
+    if (!active.count(object)) {
+      throw invalid_argument("Pool has no free objects");
+    }
+    active.erase(object);
+    free.push(object);
+  }
+
+  ~ObjectPool() {
+    for (auto object : active) {
+      delete object;
+    }
+    active.clear();
+
+    while (!free.empty()) {
+      auto object = free.front();
+      free.pop();
+      delete object;
+    }
+  }
 
 private:
-  // Add fields here
+  T* GetFromFreeQueue() {
+    auto object = free.front();
+    free.pop();
+    active.insert(object);
+    return object;
+  }
+
+  queue<T*> free;
+  set<T*> active;
 };
 
 void TestObjectPool() {
