@@ -7,6 +7,7 @@
 #include <queue>
 #include <stdexcept>
 #include <set>
+#include <unordered_map>
 using namespace std;
 
 template <class T>
@@ -14,7 +15,7 @@ class ObjectPool {
 public:
   T* Allocate() {
     if (free.empty()) {
-      free.push(new T);
+      free.push(make_unique<T>());
     }
     return GetFromFreeQueue();
   }
@@ -27,36 +28,25 @@ public:
   }
 
   void Deallocate(T* object) {
-    if (!active.count(object)) {
+    auto it = active.find(object);
+    if (it == end(active)) {
       throw invalid_argument("Pool has no free objects");
     }
-    active.erase(object);
-    free.push(object);
-  }
-
-  ~ObjectPool() {
-    for (auto object : active) {
-      delete object;
-    }
-    active.clear();
-
-    while (!free.empty()) {
-      auto object = free.front();
-      free.pop();
-      delete object;
-    }
+    free.push(move(it->second));
+    active.erase(it);
   }
 
 private:
   T* GetFromFreeQueue() {
-    auto object = free.front();
+    auto ptr = move(free.front());
     free.pop();
-    active.insert(object);
-    return object;
+    auto ret = ptr.get();
+    active[ret] = move(ptr);
+    return ret;
   }
 
-  queue<T*> free;
-  set<T*> active;
+  queue<unique_ptr<T>> free;
+  unordered_map<T*, unique_ptr<T>> active;
 };
 
 void TestObjectPool() {
