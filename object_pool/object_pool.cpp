@@ -7,7 +7,6 @@
 #include <queue>
 #include <stdexcept>
 #include <set>
-#include <unordered_map>
 using namespace std;
 
 template <class T>
@@ -32,8 +31,7 @@ public:
     if (it == end(active)) {
       throw invalid_argument("Pool has no free objects");
     }
-    free.push(move(it->second));
-    active.erase(it);
+    free.push(move(active.extract(it).value()));
   }
 
 private:
@@ -41,12 +39,28 @@ private:
     auto ptr = move(free.front());
     free.pop();
     auto ret = ptr.get();
-    active[ret] = move(ptr);
+    active.insert(move(ptr));
     return ret;
   }
 
+  struct Compare {
+    using is_transparent = void;
+
+    bool operator()(const unique_ptr<T>& lhs, const unique_ptr<T>& rhs) const {
+      return lhs < rhs;
+    }
+
+    bool operator()(const unique_ptr<T>& rhs, const T* lhs) const {
+      return less<const T*>()(rhs.get(), lhs);
+    }
+
+    bool operator()(const T* lhs, const unique_ptr<T>& rhs) const {
+      return less<const T*>()(lhs, rhs.get());
+    }
+  };
+
   queue<unique_ptr<T>> free;
-  unordered_map<T*, unique_ptr<T>> active;
+  set<unique_ptr<T>, Compare> active;
 };
 
 void TestObjectPool() {
