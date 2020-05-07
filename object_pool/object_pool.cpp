@@ -6,7 +6,7 @@
 #include <string>
 #include <queue>
 #include <stdexcept>
-#include <set>
+#include <unordered_set>
 using namespace std;
 
 template <class T>
@@ -27,11 +27,13 @@ public:
   }
 
   void Deallocate(T* object) {
-    auto it = active.find(object);
-    if (it == end(active)) {
+    unique_ptr<T> ptr{object};
+    auto it = allocated.find(ptr);
+    ptr.release();
+    if (it == end(allocated)) {
       throw invalid_argument("Pool has no free objects");
     }
-    free.push(move(active.extract(it).value()));
+    free.push(move(allocated.extract(it).value()));
   }
 
 private:
@@ -39,7 +41,7 @@ private:
     auto ptr = move(free.front());
     free.pop();
     auto ret = ptr.get();
-    active.insert(move(ptr));
+    allocated.insert(move(ptr));
     return ret;
   }
 
@@ -60,7 +62,7 @@ private:
   };
 
   queue<unique_ptr<T>> free;
-  set<unique_ptr<T>, Compare> active;
+  unordered_set<unique_ptr<T>> allocated;
 };
 
 void TestObjectPool() {
@@ -85,7 +87,8 @@ void TestObjectPool() {
   pool.Deallocate(p1);
 }
 
-void run() {
+void TestLeakage() {
+  static const int max_objects{1'000};
   static int counter{0};
   struct Counted {
     Counted() { counter++; }
@@ -95,27 +98,29 @@ void run() {
   {
     ObjectPool<Counted> pool;
 
-    cout << "Counter before loop = " << counter << endl;
+    // cout << "Counter before loop = " << counter << endl;
+    ASSERT_EQUAL(counter, 0);
 
     try {
-      for (int i = 0; i < 1'000; ++i) {
-        cout << "Allocating object #" << i << endl;
+      for (int i = 0; i < max_objects; ++i) {
+        // cout << "Allocating object #" << i << endl;
         pool.Allocate();
       }
     } catch (const std::bad_alloc& e) {
       cout << e.what() << endl;
     }
 
-    cout << "Counter after loop = " << counter << endl;
+    // cout << "Counter after loop = " << counter << endl;
   }
-  cout << "Counter before exit = " << counter << endl;
+  // cout << "Counter before exit = " << counter << endl;
+  ASSERT_EQUAL(counter, 0);
 }
 
 int main() {
   TestRunner tr;
   RUN_TEST(tr, TestObjectPool);
-
-  run();
+  RUN_TEST(tr, TestLeakage);
+  cout << "Please, run TestLeakage multiple times with memory limitation" << endl;
 
   return 0;
 }
