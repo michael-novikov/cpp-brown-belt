@@ -24,7 +24,7 @@ public:
     Priority priority{book_name, chrono::steady_clock::now()};
 
     if (books_.count(book_name)) {
-      auto item = books_.at(book_name);
+      auto& item = books_.at(book_name);
 
       use_times_.erase(item.first);
       use_times_.insert(priority);
