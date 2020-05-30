@@ -11,21 +11,23 @@ using namespace std;
 
 
 bool IsSubdomain(string_view subdomain, string_view domain) {
-  auto i = subdomain.size() - 1;
-  auto j = domain.size() - 1;
+  int i = subdomain.size() - 1;
+  int j = domain.size() - 1;
   while (i >= 0 && j >= 0) {
     if (subdomain[i--] != domain[j--]) {
       return false;
     }
   }
   return (i < 0 && domain[j] == '.')
-      || (j < 0 && subdomain[i] == '.');
+      || (j < 0 && subdomain[i] == '.')
+      || (i < 0 && j < 0);
 }
 
 
 vector<string> ReadDomains(istream& in = cin) {
   size_t count;
   in >> count;
+  in.ignore(1);
 
   vector<string> domains;
   for (size_t i = 0; i < count; ++i) {
