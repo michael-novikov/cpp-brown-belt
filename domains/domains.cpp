@@ -1,8 +1,11 @@
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "test_runner.h"
 
 using namespace std;
 
@@ -20,21 +23,77 @@ bool IsSubdomain(string_view subdomain, string_view domain) {
 }
 
 
-vector<string> ReadDomains() {
+vector<string> ReadDomains(istream& in = cin) {
   size_t count;
-  cin >> count;
+  in >> count;
 
   vector<string> domains;
   for (size_t i = 0; i < count; ++i) {
     string domain;
-    getline(cin, domain);
+    getline(in, domain);
     domains.push_back(domain);
   }
   return domains;
 }
 
 
+void TestReadDomains() {
+  { // Test empty
+    istringstream in("0");
+    vector<string> actual = ReadDomains(in);
+    vector<string> expected = {};
+
+    ASSERT_EQUAL(actual.size(), expected.size());
+    ASSERT_EQUAL(actual, expected);
+  }
+
+  { // Test one domain
+    istringstream in("1\nya.ru\n");
+    vector<string> actual = ReadDomains(in);
+    vector<string> expected = { "ya.ru" };
+
+    ASSERT_EQUAL(actual.size(), expected.size());
+    ASSERT_EQUAL(actual, expected);
+  }
+
+  { // Test two domains
+    istringstream in("2\nya.ru\ngoogle.com\n");
+    vector<string> actual = ReadDomains(in);
+    vector<string> expected = { "ya.ru", "google.com" };
+
+    ASSERT_EQUAL(actual.size(), expected.size());
+    ASSERT_EQUAL(actual, expected);
+  }
+}
+
+
+void TestIsSubdomain() {
+  ASSERT(IsSubdomain("ru", "ru"));
+  ASSERT(IsSubdomain("ru", "ya.ru"));
+  ASSERT(IsSubdomain("ya.ru", "ya.ru"));
+  ASSERT(IsSubdomain("abc.de", "yz.abc.de"));
+  ASSERT(IsSubdomain("abc.de", "wx.yz.abc.de"));
+
+  ASSERT(IsSubdomain("", ""));
+
+  ASSERT(!IsSubdomain("a.x", "b.x"));
+  ASSERT(!IsSubdomain("a.x", "ab.x"));
+
+  ASSERT(!IsSubdomain("a.x", "aa.x"));
+  ASSERT(!IsSubdomain("a.x", "b.aa.x"));
+}
+
+
+void RunTests() {
+  TestRunner tr;
+  RUN_TEST(tr, TestReadDomains);
+  RUN_TEST(tr, TestIsSubdomain);
+}
+
+
 int main() {
+  RunTests();
+
   const vector<string> banned_domains = ReadDomains();
   const vector<string> domains_to_check = ReadDomains();
 
