@@ -94,29 +94,29 @@ void RunTests() {
 int main() {
   RunTests();
 
-  const vector<string> banned_domains = ReadDomains();
-  const vector<string> domains_to_check = ReadDomains();
+  // const vector<string> banned_domains = ReadDomains();
+  // const vector<string> domains_to_check = ReadDomains();
 
-  for (string_view domain : banned_domains) {
-    reverse(begin(domain), end(domain));
-  }
-  sort(begin(banned_domains), end(banned_domains));
+  // for (string_view domain : banned_domains) {
+  //   reverse(begin(domain), end(domain));
+  // }
+  // sort(begin(banned_domains), end(banned_domains));
 
-  size_t insert_pos = 0;
-  for (string& domain : banned_domains) {
-    if (insert_pos == 0 || !IsSubdomain(domain, banned_domains[insert_pos - 1])) {
-      swap(banned_domains[insert_pos++], domain);
-    }
-  }
-  banned_domains.resize(insert_pos);
+  // size_t insert_pos = 0;
+  // for (string& domain : banned_domains) {
+  //   if (insert_pos == 0 || !IsSubdomain(domain, banned_domains[insert_pos - 1])) {
+  //     swap(banned_domains[insert_pos++], domain);
+  //   }
+  // }
+  // banned_domains.resize(insert_pos);
 
-  for (const string_view domain : domains_to_check) {
-    if (const auto it = upper_bound(begin(banned_domains), end(banned_domains), domain);
-        it != begin(banned_domains) && IsSubdomain(domain, *prev(it))) {
-      cout << "Good" << endl;
-    } else {
-      cout << "Bad" << endl;
-    }
-  }
+  // for (const string_view domain : domains_to_check) {
+  //   if (const auto it = upper_bound(begin(banned_domains), end(banned_domains), domain);
+  //       it != begin(banned_domains) && IsSubdomain(domain, *prev(it))) {
+  //     cout << "Good" << endl;
+  //   } else {
+  //     cout << "Bad" << endl;
+  //   }
+  // }
   return 0;
 }
