@@ -18,8 +18,7 @@ bool IsSubdomain(string_view subdomain, string_view domain) {
       return false;
     }
   }
-  return (i < 0 && domain[j] == '.')
-      || (j < 0 && subdomain[i] == '.')
+  return (j < 0 && subdomain[i] == '.')
       || (i < 0 && j < 0);
 }
 
@@ -70,19 +69,23 @@ void TestReadDomains() {
 
 
 void TestIsSubdomain() {
-  ASSERT(IsSubdomain("ru", "ru"));
-  ASSERT(IsSubdomain("ru", "ya.ru"));
-  ASSERT(IsSubdomain("ya.ru", "ya.ru"));
-  ASSERT(IsSubdomain("abc.de", "yz.abc.de"));
-  ASSERT(IsSubdomain("abc.de", "wx.yz.abc.de"));
-
   ASSERT(IsSubdomain("", ""));
+
+  ASSERT(IsSubdomain("ru", "ru"));
+  ASSERT(IsSubdomain("ya.ru", "ya.ru"));
+  ASSERT(IsSubdomain("ya.ru", "ru"));
+
+  ASSERT(IsSubdomain("yz.abc.de", "abc.de"));
+  ASSERT(IsSubdomain("wx.yz.abc.de", "abc.de"));
 
   ASSERT(!IsSubdomain("a.x", "b.x"));
   ASSERT(!IsSubdomain("a.x", "ab.x"));
 
   ASSERT(!IsSubdomain("a.x", "aa.x"));
   ASSERT(!IsSubdomain("a.x", "b.aa.x"));
+
+  ASSERT(!IsSubdomain("abc.de", "yz.abc.de"));
+  ASSERT(!IsSubdomain("abc.de", "wx.yz.abc.de"));
 }
 
 
