@@ -22,6 +22,17 @@ bool IsSubdomain(string_view subdomain, string_view domain) {
       || (i < 0 && j < 0);
 }
 
+bool IsSubdomainReversed(string_view subdomain, string_view domain) {
+  int i = 0;
+  int j = 0;
+  while (i < subdomain.size() && j < domain.size()) {
+    if (subdomain[i++] != domain[j++]) {
+      return false;
+    }
+  }
+  return (j == domain.size()) && (i == j || subdomain[i] == '.');
+}
+
 
 vector<string> ReadDomains(istream& in = cin) {
   size_t count;
@@ -37,6 +48,10 @@ vector<string> ReadDomains(istream& in = cin) {
   return domains;
 }
 
+bool IsBannedDomain(string_view domain, const vector<string>& banned_domains) {
+  const auto it = upper_bound(begin(banned_domains), end(banned_domains), domain);
+  return it != begin(banned_domains) && IsSubdomainReversed(domain, *prev(it));
+}
 
 void TestReadDomains() {
   { // Test empty
@@ -88,40 +103,98 @@ void TestIsSubdomain() {
   ASSERT(!IsSubdomain("abc.de", "wx.yz.abc.de"));
 }
 
+void TestIsSubdomainReversed() {
+  vector<pair<string, string>> positive_tests = {
+    { "", "" },
+    { "ur", "ur" },
+    { "ur.ay", "ur.ay" },
+    { "ur.ay", "ur" },
+    { "ed.cba.zy", "ed.cba" },
+    { "ed.cba.zy.xw", "ed.cba" },
+  };
+
+  vector<pair<string, string>> negative_tests = {
+    { "x.a", "x.b" },
+    { "x.a", "x.ba" },
+    { "x.a", "x.aa" },
+    { "x.a", "x.aa.b" },
+    { "ed.cba", "ed.cba.zy" },
+    { "ed.cba", "ed.abc.zy.xw" },
+  };
+
+  for (const auto& [subdomain, domain] : positive_tests) {
+    ASSERT(IsSubdomainReversed(subdomain, domain));
+  }
+
+  for (const auto& [subdomain, domain] : negative_tests) {
+    ASSERT(!IsSubdomainReversed(subdomain, domain));
+  }
+}
+
+void TestIsBannedDomain() {
+  // TODO: remove any algorithms from unit test;
+  const vector<string> banned_domains = [] {
+    vector<string> tmp = { "ya.ru", "maps.me", "m.ya.ru", "com" };
+    for (string& domain : tmp) {
+      reverse(begin(domain), end(domain));
+    }
+    sort(begin(tmp), end(tmp));
+    return tmp;
+  }();
+
+  vector<string> positive_tests = {"ya.ru", "ya.com", "m.maps.me", "moscow.m.ya.ru", "maps.com" };
+  vector<string> negative_tests = {"maps.ru", "ya.ya"};
+
+  for (auto domain : positive_tests) {
+    reverse(begin(domain), end(domain));
+    ASSERT(IsBannedDomain(domain, banned_domains));
+  }
+
+  for (auto domain : negative_tests) {
+    reverse(begin(domain), end(domain));
+    ASSERT(!IsBannedDomain(domain, banned_domains));
+  }
+}
 
 void RunTests() {
   TestRunner tr;
   RUN_TEST(tr, TestReadDomains);
   RUN_TEST(tr, TestIsSubdomain);
+  RUN_TEST(tr, TestIsSubdomainReversed);
+  RUN_TEST(tr, TestIsBannedDomain);
 }
-
 
 int main() {
   RunTests();
 
-  // const vector<string> banned_domains = ReadDomains();
-  // const vector<string> domains_to_check = ReadDomains();
+  const vector<string> banned_domains = [] {
+    vector<string> input = ReadDomains();
 
-  // for (string_view domain : banned_domains) {
-  //   reverse(begin(domain), end(domain));
-  // }
-  // sort(begin(banned_domains), end(banned_domains));
+    for (string& domain : input) {
+      reverse(begin(domain), end(domain));
+    }
 
-  // size_t insert_pos = 0;
-  // for (string& domain : banned_domains) {
-  //   if (insert_pos == 0 || !IsSubdomain(domain, banned_domains[insert_pos - 1])) {
-  //     swap(banned_domains[insert_pos++], domain);
-  //   }
-  // }
-  // banned_domains.resize(insert_pos);
+    sort(begin(input), end(input));
+    return input;
+  }();
 
-  // for (const string_view domain : domains_to_check) {
-  //   if (const auto it = upper_bound(begin(banned_domains), end(banned_domains), domain);
-  //       it != begin(banned_domains) && IsSubdomain(domain, *prev(it))) {
-  //     cout << "Good" << endl;
-  //   } else {
-  //     cout << "Bad" << endl;
-  //   }
-  // }
+  const vector<string> domains_to_check = [] {
+    vector<string> input = ReadDomains();
+
+    for (string& domain : input) {
+      reverse(begin(domain), end(domain));
+    }
+
+    return input;
+  }();
+
+  for (const string_view domain : domains_to_check) {
+    if (IsBannedDomain(domain, banned_domains)) {
+      cout << "Bad" << endl;
+    } else {
+      cout << "Good" << endl;
+    }
+  }
+
   return 0;
 }
