@@ -15,11 +15,13 @@ include_directories(${utility})
 project(${this_project} CXX)
 
 set(headers
+  ${this_project}.h
   )
 
 set(sources
   ${this_project}.cpp
   )
 
-add_executable(${this_project} ${sources} ${headers})
+add_executable(${this_project} main.cpp ${sources} ${headers})
+add_executable(${this_project}_tests tests.cpp ${sources} ${headers})
 
