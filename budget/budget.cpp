@@ -14,4 +14,5 @@ using namespace std;
 
 int main() {
   TestDate::TestAll();
+  TestBudgetSystem::TestAll();
 }

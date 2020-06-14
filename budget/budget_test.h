@@ -12,4 +12,13 @@ public:
   static void TestComputeDaysDiff();
 };
 
+class TestBudgetSystem {
+public:
+  static void TestAll();
+
+  static void TestComputeIncome();
+  static void TestEarn();
+  static void TestPayTax();
+};
+
 #endif // BUDGET_TEST_H

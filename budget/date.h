@@ -4,7 +4,9 @@
 #include <ctime>
 #include <string>
 
+#ifdef BUDGET_TEST
 #include "budget_test.h"
+#endif
 
 class Date {
 public:
@@ -15,6 +17,10 @@ public:
   static bool Validate(int year, int month, int day);
   static Date FromString(std::string str);
   static int ComputeDaysDiff(const Date& date_to, const Date& date_from);
+
+  bool operator==(const Date& other);
+  bool operator<(const Date& other);
+  bool operator<=(const Date& other);
 
 #ifdef BUDGET_TEST
   friend class TestDate;

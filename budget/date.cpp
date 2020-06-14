@@ -55,8 +55,22 @@ Date Date::FromString(std::string str) {
   in.ignore(1);
   in >> day;
 
-  return Date{year, month, day};
+  return {year, month, day};
 }
 
 const std::string Date::delim = "-";
+
+bool Date::operator==(const Date& other) {
+  return year_ == other.year_
+    && month_ == other.month_
+    && day_ == other.day_;
+}
+
+bool Date::operator<(const Date& other) {
+  return Date::ComputeDaysDiff(other, *this) > 0;
+}
+
+bool Date::operator<=(const Date& other) {
+  return Date::ComputeDaysDiff(other, *this) >= 0;
+}
 
