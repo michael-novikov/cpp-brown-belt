@@ -60,17 +60,17 @@ Date Date::FromString(std::string str) {
 
 const std::string Date::delim = "-";
 
-bool Date::operator==(const Date& other) {
+bool Date::operator==(const Date& other) const {
   return year_ == other.year_
     && month_ == other.month_
     && day_ == other.day_;
 }
 
-bool Date::operator<(const Date& other) {
+bool Date::operator<(const Date& other) const {
   return Date::ComputeDaysDiff(other, *this) > 0;
 }
 
-bool Date::operator<=(const Date& other) {
+bool Date::operator<=(const Date& other) const {
   return Date::ComputeDaysDiff(other, *this) >= 0;
 }
 

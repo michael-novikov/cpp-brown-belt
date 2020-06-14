@@ -1,6 +1,7 @@
 #ifndef BUDGET_H
 #define BUDGET_H
 
+#include <map>
 #include <vector>
 #include <utility>
 
@@ -18,7 +19,7 @@ struct Income {
   Date to;
   IncomeValue value;
 
-  bool operator==(const Income& other);
+  bool operator==(const Income& other) const;
 };
 
 class BudgetSystem {
@@ -33,7 +34,7 @@ public:
   friend class TestBudgetSystem;
 #endif
 private:
-  std::vector<Income> incomes_;
+  std::map<Date, PureIncome> incomes_;
 };
 
 #endif // BUDGET_H

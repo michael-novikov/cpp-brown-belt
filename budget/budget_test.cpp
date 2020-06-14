@@ -1,6 +1,7 @@
 #include "budget_test.h"
 
 #include <iterator>
+#include <utility>
 #include <vector>
 #include <algorithm>
 #include <numeric>
@@ -10,6 +11,8 @@
 #include "test_runner.h"
 
 using namespace std;
+
+static const double EQUAL_PRECISION = 0.001;
 
 void TestDate::TestConstructor() {
   {
@@ -120,37 +123,39 @@ void TestDate::TestAll() {
 void TestBudgetSystem::TestEarn() {
   {
     BudgetSystem bs;
-    ASSERT_EQUAL(bs.incomes_.size(), 0);
+    ASSERT_EQUAL(bs.incomes_.size(), 0u);
   }
 
   {
     BudgetSystem bs;
-    Date date{2000, 1, 1};
-    size_t value{1};
+    const Date date{2000, 1, 1};
+    const size_t value{1};
     bs.Earn(date, date, value);
-    ASSERT_EQUAL(bs.incomes_.size(), 1);
-    ASSERT_EQUAL(bs.incomes_[0], (Income{date, date, value}));
+    ASSERT_EQUAL(bs.incomes_.size(), 2u);
+    ASSERT(abs(bs.incomes_.at(date) - value) < EQUAL_PRECISION);
   }
 
   {
     BudgetSystem bs;
 
-    Date date_1{2000, 1, 1};
-    Date date_2{2000, 1, 2};
-    size_t value_1{1};
-    size_t value_2{2};
+    const Date date_1{2000, 1, 1};
+    const Date date_2{2000, 1, 2};
+    const size_t value_1{1};
+    const size_t value_2{2};
 
     bs.Earn(date_1, date_1, value_1);
-    bs.Earn(date_2, date_1, value_2);
+    bs.Earn(date_1, date_2, value_2);
 
-    vector<Income> expected{
-      {date_1, date_1, value_1},
-      {date_2, date_1, value_2},
+    const map<Date, PureIncome> expected{
+      {date_1, 2},
+      {date_2, 1},
+      {{2000, 1, 3}, 0},
     };
 
     ASSERT_EQUAL(bs.incomes_.size(), expected.size());
-    for (size_t i = 0; i < expected.size(); ++i) {
-      ASSERT_EQUAL(bs.incomes_[i], expected[i]);
+    for (const auto& [date, income] : bs.incomes_) {
+      ASSERT(expected.count(date));
+      ASSERT(abs(income - expected.at(date)) < EQUAL_PRECISION);
     }
   }
 }
@@ -158,16 +163,19 @@ void TestBudgetSystem::TestEarn() {
 void TestBudgetSystem::TestPayTax(){
   {
     BudgetSystem bs;
-    ASSERT_EQUAL(bs.incomes_.size(), 0);
+    ASSERT_EQUAL(bs.incomes_.size(), 0u);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
-    ASSERT_EQUAL(bs.incomes_.size(), 0);
+    ASSERT_EQUAL(bs.incomes_.size(), 0u);
   }
 
   {
     BudgetSystem bs;
-    bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
-    bs.PayTax({2000, 1, 1}, {2000, 1, 1});
-    ASSERT_EQUAL(bs.incomes_[0], 87);
+    const Date date{2000, 1, 1};
+    bs.Earn(date, date, 100);
+    bs.PayTax(date, date);
+
+    const double expected{87};
+    ASSERT(abs(bs.incomes_.at(date) - expected) < EQUAL_PRECISION);
   }
 
   {
@@ -176,24 +184,26 @@ void TestBudgetSystem::TestPayTax(){
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
 
-    bs.Earn({2000, 1, 2}, {2000, 1, 1}, 1000);
-    bs.PayTax({2000, 1, 2}, {2000, 1, 1});
+    bs.Earn({2000, 1, 1}, {2000, 1, 2}, 1000);
+    bs.PayTax({2000, 1, 1}, {2000, 1, 2});
 
-    ASSERT_EQUAL(bs.incomes_[0], 87);
-    ASSERT_EQUAL(bs.incomes_[1], 870);
+    const double expected_1{510.69};
+    ASSERT(abs(bs.incomes_.at({2000, 1, 1}) - expected_1) < EQUAL_PRECISION);
+
+    const double expected_2{435};
+    ASSERT(abs(bs.incomes_.at({2000, 1, 2}) - expected_2) < EQUAL_PRECISION);
   }
 }
 
 void TestBudgetSystem::TestComputeIncome() {
-  static const double EQUAL_PRECISION = 0.001;
-
   {
     BudgetSystem bs;
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
-    double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
+    const double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
 
-    double expected{100};
+    const double expected{100};
+    //cout << "LOG: " << income << endl;
     ASSERT(abs(income - expected) < EQUAL_PRECISION);
   }
 
@@ -202,9 +212,9 @@ void TestBudgetSystem::TestComputeIncome() {
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
-    double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
+    const double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
 
-    double expected{87};
+    const double expected{87};
     ASSERT(abs(income - expected) < EQUAL_PRECISION);
   }
 
@@ -212,10 +222,10 @@ void TestBudgetSystem::TestComputeIncome() {
     BudgetSystem bs;
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
-    bs.Earn({2000, 1, 2}, {2000, 1, 1}, 100);
-    double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
+    bs.Earn({2000, 1, 1}, {2000, 1, 2}, 100);
+    const double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
 
-    double expected{150};
+    const double expected{150};
     ASSERT(abs(income - expected) < EQUAL_PRECISION);
   }
 
@@ -223,12 +233,12 @@ void TestBudgetSystem::TestComputeIncome() {
     BudgetSystem bs;
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
-    bs.Earn({2000, 1, 2}, {2000, 1, 1}, 100);
+    bs.Earn({2000, 1, 1}, {2000, 1, 2}, 100);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
 
-    double income = bs.ComputeIncome({2000, 1, 2}, {2000, 1, 2});
+    const double income = bs.ComputeIncome({2000, 1, 2}, {2000, 1, 2});
 
-    double expected{50};
+    const double expected{50};
     ASSERT(abs(income - expected) < EQUAL_PRECISION);
   }
 
@@ -238,22 +248,22 @@ void TestBudgetSystem::TestComputeIncome() {
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
 
-    bs.Earn({2000, 1, 2}, {2000, 1, 1}, 100);
-    bs.PayTax({2000, 1, 2}, {2000, 1, 1});
+    bs.Earn({2000, 1, 1}, {2000, 1, 2}, 100);
+    bs.PayTax({2000, 1, 1}, {2000, 1, 2});
 
-    double income_1 = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
-    double expected_1{119.19};
+    const double income_1 = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
+    const double expected_1{119.19};
     ASSERT(abs(income_1 - expected_1) < EQUAL_PRECISION);
 
-    double income_2 = bs.ComputeIncome({2000, 1, 2}, {2000, 1, 2});
-    double expected_2{43.5};
+    const double income_2 = bs.ComputeIncome({2000, 1, 2}, {2000, 1, 2});
+    const double expected_2{43.5};
     ASSERT(abs(income_2 - expected_2) < EQUAL_PRECISION);
   }
 }
 
 void TestBudgetSystem::TestAll() {
   TestRunner tr;
-  RUN_TEST(tr, TestComputeIncome);
   RUN_TEST(tr, TestEarn);
+  RUN_TEST(tr, TestComputeIncome);
   RUN_TEST(tr, TestPayTax);
 }

@@ -20,12 +20,14 @@ project(${this_project} CXX)
 set(headers
   budget_test.h
   date.h
+  budget_system.h
   )
 
 set(sources
   ${this_project}.cpp
   date.cpp
   budget_test.cpp
+  budget_system.cpp
   )
 
 add_executable(${this_project} ${sources} ${headers})

@@ -18,9 +18,13 @@ public:
   static Date FromString(std::string str);
   static int ComputeDaysDiff(const Date& date_to, const Date& date_from);
 
-  bool operator==(const Date& other);
-  bool operator<(const Date& other);
-  bool operator<=(const Date& other);
+  int Year() const { return year_; }
+  int Month() const { return month_; }
+  int Day() const { return day_; }
+
+  bool operator==(const Date& other) const;
+  bool operator<(const Date& other) const;
+  bool operator<=(const Date& other) const;
 
 #ifdef BUDGET_TEST
   friend class TestDate;
