@@ -1,14 +1,22 @@
 #include "date.h"
 
+#include <ctime>
 #include <sstream>
 
 using namespace std;
 
+static const int SECONDS_IN_DAY = 60 * 60 * 24;
+
 int Date::ComputeDaysDiff(const Date& date_to, const Date& date_from) {
   const time_t timestamp_to = date_to.AsTimestamp();
   const time_t timestamp_from = date_from.AsTimestamp();
-  static const int SECONDS_IN_DAY = 60 * 60 * 24;
   return (timestamp_to - timestamp_from) / SECONDS_IN_DAY;
+}
+
+Date Date::Next(const Date& date) {
+  const time_t next_day_ts = date.AsTimestamp() + SECONDS_IN_DAY;
+  const tm* next_day = localtime(&next_day_ts);
+  return {1900 + next_day->tm_year, 1 + next_day->tm_mon, next_day->tm_mday};
 }
 
 Date::Date(int year, int month, int day) {

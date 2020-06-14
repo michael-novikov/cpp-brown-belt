@@ -17,6 +17,7 @@ public:
   static bool Validate(int year, int month, int day);
   static Date FromString(std::string str);
   static int ComputeDaysDiff(const Date& date_to, const Date& date_from);
+  static Date Next(const Date& date);
 
   int Year() const { return year_; }
   int Month() const { return month_; }
