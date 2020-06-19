@@ -82,3 +82,7 @@ bool Date::operator<=(const Date& other) const {
   return Date::ComputeDaysDiff(other, *this) >= 0;
 }
 
+std::ostream& operator<<(std::ostream& os, const Date& date) {
+  return os << date.Year() << Date::delim << date.Month() << Date::delim << date.Day();
+}
+

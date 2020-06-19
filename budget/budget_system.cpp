@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <iterator>
 
 #include "date.h"
 
@@ -20,14 +21,16 @@ PureIncome BudgetSystem::ComputeIncome(const Date& from, const Date& to) const {
 }
 
 void BudgetSystem::Earn(const Date& from, const Date& to, IncomeValue value) {
-  IncomeValue income_after = incomes_.lower_bound(to)->second;
-  Date date_after{to.Year(), to.Month(), to.Day() + 1};
-  auto [end, end_inserted] = incomes_.emplace(date_after, income_after);
+  auto nearest = incomes_.lower_bound(from);
+  auto [income_begin, begin_inserted] = incomes_.emplace(from, nearest->second);
+  auto [income_end, end_inserted] = incomes_.emplace(Date::Next(to), PureIncome{0});
 
-  auto [begin, begin_inserted] = incomes_.emplace(from, IncomeValue{0});
-  PureIncome value_per_day =
-      static_cast<PureIncome>(value) / (Date::ComputeDaysDiff(end->first, begin->first));
-  for (auto it = begin; it != end; ++it) {
+  PureIncome value_per_day{
+    static_cast<PureIncome>(value)
+    / Date::ComputeDaysDiff(income_end->first, income_begin->first)
+  };
+
+  for (auto it = std::next(income_begin); it != std::next(income_end); ++it) {
     it->second += value_per_day;
   }
 }

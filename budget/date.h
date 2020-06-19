@@ -2,6 +2,7 @@
 #define DATE_H
 
 #include <ctime>
+#include <ostream>
 #include <string>
 
 #ifdef BUDGET_TEST
@@ -27,15 +28,18 @@ public:
   bool operator<(const Date& other) const;
   bool operator<=(const Date& other) const;
 
+  static const std::string delim;
+
 #ifdef BUDGET_TEST
   friend class TestDate;
 #endif
 private:
-  static const std::string delim;
 
   int day_;
   int month_;
   int year_;
 };
+
+std::ostream& operator<<(std::ostream& os, const Date& date);
 
 #endif // DATE_H

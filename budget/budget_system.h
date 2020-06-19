@@ -34,7 +34,7 @@ public:
   friend class TestBudgetSystem;
 #endif
 private:
-  std::map<Date, PureIncome> incomes_;
+  std::map<Date, PureIncome> incomes_ = { { Date{2099, 12, 31}, PureIncome{0} } };
 };
 
 #endif // BUDGET_H
