@@ -15,9 +15,14 @@ bool Income::operator==(const Income& other) const {
 }
 
 PureIncome BudgetSystem::ComputeIncome(const Date& from, const Date& to) const {
-  // TODO: implement me
-  throw std::runtime_error("Not implemented "
-      + std::to_string(from.Day()) + " " + std::to_string(to.Day()));
+  PureIncome res{0};
+  for (auto cur = from; cur <= to; ) {
+    const auto& [bound, income] = *incomes_.upper_bound(cur);
+    auto next = std::min(bound, Date::Next(to));
+    res += income * Date::ComputeDaysDiff(next, cur);
+    cur = next;
+  }
+  return res;
 }
 
 void BudgetSystem::Earn(const Date& from, const Date& to, IncomeValue value) {
