@@ -97,6 +97,13 @@ inline void Assert(bool b, const std::string& hint) {
   AssertEqual(b, true, hint);
 }
 
+template<>
+void AssertEqual<double, double>(const double& t, const double& u, const std::string& hint) {
+  static const double equal_precision = 0.001;
+  Assert(abs(t - u) < equal_precision, hint);
+}
+
+
 class TestRunner {
 public:
   template <class TestFunc>
