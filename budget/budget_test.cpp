@@ -167,9 +167,9 @@ void TestBudgetSystem::TestEarn() {
 void TestBudgetSystem::TestPayTax(){
   {
     BudgetSystem bs;
-    ASSERT_EQUAL(bs.incomes_.size(), 0u);
+    ASSERT_EQUAL(bs.incomes_.size(), 1u);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
-    ASSERT_EQUAL(bs.incomes_.size(), 0u);
+    ASSERT_EQUAL(bs.incomes_.size(), 3u);
   }
 
   {
@@ -178,8 +178,9 @@ void TestBudgetSystem::TestPayTax(){
     bs.Earn(date, date, 100);
     bs.PayTax(date, date);
 
-    const double expected{87};
-    ASSERT_EQUAL(bs.incomes_.at(date), expected);
+    const PureIncome expected{87};
+    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 1}), PureIncome{0});
+    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), expected);
   }
 
   {
@@ -192,10 +193,10 @@ void TestBudgetSystem::TestPayTax(){
     bs.PayTax({2000, 1, 1}, {2000, 1, 2});
 
     const double expected_1{510.69};
-    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 1}), expected_1);
+    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), expected_1);
 
     const double expected_2{435};
-    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), expected_2);
+    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 3}), expected_2);
   }
 }
 
@@ -268,6 +269,6 @@ void TestBudgetSystem::TestComputeIncome() {
 void TestBudgetSystem::TestAll() {
   TestRunner tr;
   RUN_TEST(tr, TestEarn);
-  RUN_TEST(tr, TestComputeIncome);
   RUN_TEST(tr, TestPayTax);
+  RUN_TEST(tr, TestComputeIncome);
 }

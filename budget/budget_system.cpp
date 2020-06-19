@@ -21,6 +21,10 @@ PureIncome BudgetSystem::ComputeIncome(const Date& from, const Date& to) const {
 }
 
 void BudgetSystem::Earn(const Date& from, const Date& to, IncomeValue value) {
+  if (Date::ComputeDaysDiff(to, from) < 0) {
+    return;
+  }
+
   auto nearest = incomes_.lower_bound(from);
   auto [income_begin, begin_inserted] = incomes_.emplace(from, nearest->second);
   auto [income_end, end_inserted] = incomes_.emplace(Date::Next(to), PureIncome{0});
@@ -35,17 +39,25 @@ void BudgetSystem::Earn(const Date& from, const Date& to, IncomeValue value) {
   }
 }
 
+PureIncome BudgetSystem::ComputeIncomeAfterTax(PureIncome income) {
+  return 0.87 * income;
+}
+
 void BudgetSystem::PayTax(const Date& from, const Date& to) {
-  auto before_to = incomes_.upper_bound(to)->first;
-  if (before_to < from) {
+  if (Date::ComputeDaysDiff(to, from) < 0) {
     return;
   }
 
-  auto [tax_begin, begin_inserted] = incomes_.emplace(from, incomes_.lower_bound(from)->second);
-  auto [tax_end, end_inserted] = incomes_.emplace(Date::Next(to), incomes_.lower_bound(to)->second);
+  auto [before_tax, before_tax_inserted] =
+    incomes_.emplace(from, incomes_.lower_bound(from)->second);
 
-  static const double tax_multiplier = (1.0 - 0.13);
+  auto day_after = Date::Next(to);
+  auto [last_payment, end_inserted] =
+    incomes_.emplace(day_after, incomes_.lower_bound(day_after)->second);
+
+  auto tax_begin = next(before_tax);
+  auto tax_end = next(last_payment);
   for (auto it = tax_begin; it != tax_end; ++it) {
-    it->second *= tax_multiplier;
+    it->second = ComputeIncomeAfterTax(it->second);
   }
 }

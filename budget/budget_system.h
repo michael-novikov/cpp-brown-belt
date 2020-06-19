@@ -30,6 +30,8 @@ public:
   void Earn(const Date& from, const Date& to, IncomeValue value);
   void PayTax(const Date& from, const Date& to);
 
+  static PureIncome ComputeIncomeAfterTax(PureIncome income);
+
 #ifdef BUDGET_TEST
   friend class TestBudgetSystem;
 #endif
