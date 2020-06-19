@@ -1,6 +1,5 @@
 #include "date.h"
 
-#include <ctime>
 #include <sstream>
 
 using namespace std;
@@ -21,9 +20,7 @@ Date Date::Next(const Date& date) {
 
 Date::Date(int year, int month, int day) {
   if (!Validate(year, month, day)) {
-    const string bad_date = (
-        ostringstream{} << to_string(year) << delim << to_string(month) << delim << to_string(day)
-    ).str();
+    const string bad_date = to_string(year) + delim + to_string(month) + delim + to_string(day);
     throw std::domain_error("Wrong date format: " + bad_date);
   }
   year_ = year;
