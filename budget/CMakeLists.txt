@@ -7,7 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_BUILD_TYPE Debug)
 
-add_definitions(-DBUDGET_TEST)
+set(BUDGET_TEST true)
 add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 set(this_project budget)
@@ -18,7 +18,6 @@ include_directories(${utility})
 project(${this_project} CXX)
 
 set(headers
-  budget_test.h
   date.h
   budget_system.h
   )
@@ -26,9 +25,14 @@ set(headers
 set(sources
   ${this_project}.cpp
   date.cpp
-  budget_test.cpp
   budget_system.cpp
   )
+
+if(BUDGET_TEST)
+  add_definitions(-DBUDGET_TEST)
+  list(APPEND headers budget_test.h)
+  list(APPEND sources budget_test.cpp)
+endif(BUDGET_TEST)
 
 add_executable(${this_project} ${sources} ${headers})
 

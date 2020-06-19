@@ -32,8 +32,10 @@ QueryType ParseQueryType(string_view query) {
 }
 
 int main() {
+#ifdef BUDGET_TEST
   TestDate::TestAll();
   TestBudgetSystem::TestAll();
+#endif
 
   cout.precision(25);
 
