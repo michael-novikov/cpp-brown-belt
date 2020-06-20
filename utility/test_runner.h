@@ -77,6 +77,19 @@ void AssertEqual(const T& t, const U& u, const std::string& hint = {}) {
   }
 }
 
+template<>
+void AssertEqual<double, double>(const double& t, const double& u, const std::string& hint) {
+  static const double equal_precision = 0.001;
+  if (!(abs(t - u) < equal_precision)) {
+    std::ostringstream os;
+    os << "Assertion failed: " << t << " != " << u;
+    if (!hint.empty()) {
+       os << " hint: " << hint;
+    }
+    throw std::runtime_error(os.str());
+  }
+}
+
 template <typename Callable>
 void AssertThrows(Callable f, const std::string& hint = {}) {
   try {
@@ -96,13 +109,6 @@ void AssertThrows(Callable f, const std::string& hint = {}) {
 inline void Assert(bool b, const std::string& hint) {
   AssertEqual(b, true, hint);
 }
-
-template<>
-void AssertEqual<double, double>(const double& t, const double& u, const std::string& hint) {
-  static const double equal_precision = 0.001;
-  Assert(abs(t - u) < equal_precision, hint);
-}
-
 
 class TestRunner {
 public:
