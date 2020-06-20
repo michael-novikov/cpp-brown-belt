@@ -23,10 +23,10 @@ void TestDate::TestConstructor() {
 
   {
     // Last supported date
-    Date date{2099, 12, 31};
-    ASSERT_EQUAL(date.year_, 2099);
-    ASSERT_EQUAL(date.month_, 12);
-    ASSERT_EQUAL(date.day_, 31);
+    Date date{2100, 1, 1};
+    ASSERT_EQUAL(date.year_, 2100);
+    ASSERT_EQUAL(date.month_, 1);
+    ASSERT_EQUAL(date.day_, 1);
   }
 
   {
@@ -41,7 +41,7 @@ void TestDate::TestValidate() {
   {
     // Supported range
     ASSERT(Date::Validate(2000, 1, 1));
-    ASSERT(Date::Validate(2099, 12, 31));
+    ASSERT(Date::Validate(2100, 1, 1));
   }
 
   {
@@ -90,8 +90,8 @@ void TestDate::TestFromString() {
     ASSERT_EQUAL(actual.day_, expected.day_);
   }
   {
-    Date expected{2099, 12, 31};
-    Date actual = Date::FromString("2099-12-31");
+    Date expected{2100, 1, 1};
+    Date actual = Date::FromString("2100-01-01");
     ASSERT_EQUAL(actual.year_, expected.year_);
     ASSERT_EQUAL(actual.month_, expected.month_);
     ASSERT_EQUAL(actual.day_, expected.day_);
@@ -118,12 +118,55 @@ void TestDate::TestAll() {
   RUN_TEST(tr, TestComputeDaysDiff);
 }
 
+void TestBudgetSystem::TestInsertNewIncome() {
+  {
+    BudgetSystem bs;
+
+    bs.AddBoundDate({2000, 1, 2});
+
+    const map<Date, PureIncome> expected{
+      {{2000, 1, 1}, 0},
+      {{2000, 1, 2}, 0},
+      {{2100, 1, 1}, 0}
+    };
+
+    ASSERT_EQUAL(bs.incomes_.size(), expected.size());
+    for (const auto& [date, income] : bs.incomes_) {
+      ASSERT(expected.count(date));
+      ASSERT_EQUAL(income, expected.at(date));
+    }
+  }
+
+  {
+    BudgetSystem bs;
+
+    bs.incomes_.emplace(Date{2000, 1, 11}, PureIncome{10});
+
+    bs.AddBoundDate({2000, 1, 6});
+
+    const map<Date, PureIncome> expected{
+      {{2000, 1, 1}, 0},
+      {{2000, 1, 6}, 5},
+      {{2000, 1, 11}, 5},
+      {{2100, 1, 1}, 0}
+    };
+
+    ASSERT_EQUAL(bs.incomes_.size(), expected.size());
+    for (const auto& [date, income] : bs.incomes_) {
+      ASSERT(expected.count(date));
+      ASSERT_EQUAL(income, expected.at(date));
+    }
+  }
+}
+
 void TestBudgetSystem::TestEarn() {
   {
     BudgetSystem bs;
-    ASSERT_EQUAL(bs.incomes_.size(), 1u);
-    ASSERT_EQUAL((bs.incomes_.begin()->first), (Date{2099, 12, 31}));
+    ASSERT_EQUAL(bs.incomes_.size(), 2u);
+    ASSERT_EQUAL((bs.incomes_.begin()->first), (Date{2000, 1, 1}));
     ASSERT_EQUAL(bs.incomes_.begin()->second, PureIncome{0});
+    ASSERT_EQUAL(std::next(bs.incomes_.begin())->first, (Date{2100, 1, 1}));
+    ASSERT_EQUAL(std::next(bs.incomes_.begin())->second, PureIncome{0});
   }
 
   {
@@ -135,7 +178,7 @@ void TestBudgetSystem::TestEarn() {
 
     ASSERT_EQUAL(bs.incomes_.at({2000, 1, 1}), 0);
     ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), value);
-    ASSERT_EQUAL(bs.incomes_.at({2099, 12, 31}), 0);
+    ASSERT_EQUAL(bs.incomes_.at({2100, 1, 1}), 0);
   }
 
   {
@@ -153,7 +196,27 @@ void TestBudgetSystem::TestEarn() {
       {{2000, 1, 1}, 0},
       {{2000, 1, 2}, 2},
       {{2000, 1, 3}, 1},
-      {{2099, 12, 31}, 0}
+      {{2100, 1, 1}, 0}
+    };
+
+    ASSERT_EQUAL(bs.incomes_.size(), expected.size());
+    for (const auto& [date, income] : bs.incomes_) {
+      ASSERT(expected.count(date));
+      ASSERT_EQUAL(income, expected.at(date));
+    }
+  }
+
+  {
+    BudgetSystem bs;
+
+    bs.Earn({2000, 1, 1}, {2000, 1, 4}, 16);
+    bs.Earn({2000, 1, 1}, {2000, 1, 2}, 8);
+
+    const map<Date, PureIncome> expected{
+      {{2000, 1, 1}, 0},
+      {{2000, 1, 3}, 16},
+      {{2000, 1, 5}, 8},
+      {{2100, 1, 1}, 0}
     };
 
     ASSERT_EQUAL(bs.incomes_.size(), expected.size());
@@ -167,7 +230,7 @@ void TestBudgetSystem::TestEarn() {
 void TestBudgetSystem::TestPayTax(){
   {
     BudgetSystem bs;
-    ASSERT_EQUAL(bs.incomes_.size(), 1u);
+    ASSERT_EQUAL(bs.incomes_.size(), 2u);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
     ASSERT_EQUAL(bs.incomes_.size(), 3u);
   }
@@ -192,10 +255,10 @@ void TestBudgetSystem::TestPayTax(){
     bs.Earn({2000, 1, 1}, {2000, 1, 2}, 1000);
     bs.PayTax({2000, 1, 1}, {2000, 1, 2});
 
-    const double expected_1{510.69};
+    const PureIncome expected_1{510.69};
     ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), expected_1);
 
-    const double expected_2{435};
+    const PureIncome expected_2{435};
     ASSERT_EQUAL(bs.incomes_.at({2000, 1, 3}), expected_2);
   }
 }
@@ -205,9 +268,9 @@ void TestBudgetSystem::TestComputeIncome() {
     BudgetSystem bs;
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
-    const double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
+    const PureIncome income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
 
-    const double expected{100};
+    const PureIncome expected{100};
     //cout << "LOG: " << income << endl;
     ASSERT_EQUAL(income, expected);
   }
@@ -217,9 +280,9 @@ void TestBudgetSystem::TestComputeIncome() {
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
-    const double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
+    const PureIncome income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
 
-    const double expected{87};
+    const PureIncome expected{87};
     ASSERT_EQUAL(income, expected);
   }
 
@@ -228,9 +291,9 @@ void TestBudgetSystem::TestComputeIncome() {
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
     bs.Earn({2000, 1, 1}, {2000, 1, 2}, 100);
-    const double income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
+    const PureIncome income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
 
-    const double expected{150};
+    const PureIncome expected{150};
     ASSERT_EQUAL(income, expected);
   }
 
@@ -241,9 +304,9 @@ void TestBudgetSystem::TestComputeIncome() {
     bs.Earn({2000, 1, 1}, {2000, 1, 2}, 100);
     bs.PayTax({2000, 1, 1}, {2000, 1, 1});
 
-    const double income = bs.ComputeIncome({2000, 1, 2}, {2000, 1, 2});
+    const PureIncome income = bs.ComputeIncome({2000, 1, 2}, {2000, 1, 2});
 
-    const double expected{50};
+    const PureIncome expected{50};
     ASSERT_EQUAL(income, expected);
   }
 
@@ -256,18 +319,19 @@ void TestBudgetSystem::TestComputeIncome() {
     bs.Earn({2000, 1, 1}, {2000, 1, 2}, 100);
     bs.PayTax({2000, 1, 1}, {2000, 1, 2});
 
-    const double income_1 = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
-    const double expected_1{119.19};
+    const PureIncome income_1 = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
+    const PureIncome expected_1{119.19};
     ASSERT_EQUAL(income_1, expected_1);
 
-    const double income_2 = bs.ComputeIncome({2000, 1, 2}, {2000, 1, 2});
-    const double expected_2{43.5};
+    const PureIncome income_2 = bs.ComputeIncome({2000, 1, 2}, {2000, 1, 2});
+    const PureIncome expected_2{43.5};
     ASSERT_EQUAL(income_2, expected_2);
   }
 }
 
 void TestBudgetSystem::TestAll() {
   TestRunner tr;
+  RUN_TEST(tr, TestInsertNewIncome);
   RUN_TEST(tr, TestEarn);
   RUN_TEST(tr, TestPayTax);
   RUN_TEST(tr, TestComputeIncome);

@@ -14,15 +14,66 @@ bool Income::operator==(const Income& other) const {
     && value == other.value;
 }
 
-PureIncome BudgetSystem::ComputeIncome(const Date& from, const Date& to) const {
+PureIncome BudgetSystem::ComputeIncome(const Date& from, const Date& to) {
   PureIncome res{0};
-  for (auto cur = from; cur <= to; ) {
-    const auto& [bound, income] = *incomes_.upper_bound(cur);
-    auto next = std::min(bound, Date::Next(to));
-    res += income * Date::ComputeDaysDiff(next, cur);
-    cur = next;
+
+  res += ComputeFromDateToBound(from);
+
+  const auto begin_ = incomes_.upper_bound(from);
+  const auto end_ = incomes_.lower_bound(Date::Next(to));
+  for (auto it = next(begin_); it != next(end_); ++it) {
+    res += it->second;
   }
+
+  res += ComputeFromBoundToDate(to);
+
   return res;
+}
+
+PureIncome BudgetSystem::ComputeFromDateToBound(const Date& date) {
+  if (date == std::prev(incomes_.end())->first) {
+    return PureIncome{0};
+  }
+
+  auto next = incomes_.upper_bound(date);
+  auto previous = std::prev(next);
+
+  int days_original = Date::ComputeDaysDiff(next->first, previous->first);
+  int days_after = Date::ComputeDaysDiff(next->first, date);
+
+  return next->second * days_after / days_original;
+}
+
+PureIncome BudgetSystem::ComputeFromBoundToDate(const Date& date) {
+  if (date == incomes_.begin()->first) {
+    return PureIncome{0};
+  }
+
+  auto next = incomes_.upper_bound(date);
+  auto previous = std::prev(next);
+
+  int days_original = Date::ComputeDaysDiff(next->first, previous->first);
+  int days_before = Date::ComputeDaysDiff(date, previous->first);
+
+  return next->second * days_before / days_original;
+}
+
+decltype(BudgetSystem::incomes_)::iterator BudgetSystem::AddBoundDate(const Date& date) {
+  if (auto it = incomes_.find(date); it != std::end(incomes_)) {
+    return it;
+  }
+
+  auto nearest = incomes_.upper_bound(date);
+  auto previous = std::prev(nearest);
+
+  int days_original = Date::ComputeDaysDiff(nearest->first, previous->first);
+  int days_before = Date::ComputeDaysDiff(date, previous->first);
+  int days_after = Date::ComputeDaysDiff(nearest->first, date);
+
+  PureIncome value = nearest->second * days_before / days_original;
+  nearest->second = nearest->second * days_after / days_original;
+
+  return incomes_.emplace(date, value).first;
 }
 
 void BudgetSystem::Earn(const Date& from, const Date& to, IncomeValue value) {
@@ -30,17 +81,15 @@ void BudgetSystem::Earn(const Date& from, const Date& to, IncomeValue value) {
     return;
   }
 
-  auto nearest = incomes_.lower_bound(from);
-  auto [income_begin, begin_inserted] = incomes_.emplace(from, nearest->second);
-  auto [income_end, end_inserted] = incomes_.emplace(Date::Next(to), PureIncome{0});
+  auto income_begin = AddBoundDate(from);
+  auto income_end = AddBoundDate(Date::Next(to));
 
-  PureIncome value_per_day{
-    static_cast<PureIncome>(value)
-    / Date::ComputeDaysDiff(income_end->first, income_begin->first)
-  };
-
+  const int days = Date::ComputeDaysDiff(income_end->first, income_begin->first);
+  auto cur = from;
   for (auto it = std::next(income_begin); it != std::next(income_end); ++it) {
-    it->second += value_per_day;
+    int days_in_interval = Date::ComputeDaysDiff(it->first, cur);
+    it->second += (static_cast<PureIncome>(value) * days_in_interval) / days;
+    cur = it->first;
   }
 }
 
@@ -53,12 +102,8 @@ void BudgetSystem::PayTax(const Date& from, const Date& to) {
     return;
   }
 
-  auto [before_tax, before_tax_inserted] =
-    incomes_.emplace(from, incomes_.lower_bound(from)->second);
-
-  auto day_after = Date::Next(to);
-  auto [last_payment, end_inserted] =
-    incomes_.emplace(day_after, incomes_.lower_bound(day_after)->second);
+  auto before_tax = AddBoundDate(from);
+  auto last_payment = AddBoundDate(Date::Next(to));
 
   auto tax_begin = next(before_tax);
   auto tax_end = next(last_payment);

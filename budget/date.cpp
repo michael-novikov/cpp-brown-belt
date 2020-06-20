@@ -45,9 +45,10 @@ bool Date::Validate(int year, int month, int day) {
     return year % 4 == 0;
   }
 
-  return year >= 2000 && year <= 2099
+  return (year >= 2000 && year <= 2099
     && month >= 1 && month <= 12
-    && day >= 1 && day <= 31;
+    && day >= 1 && day <= 31)
+    || (year == 2100 && month == 1 && day == 1);
 }
 
 Date Date::FromString(std::string str) {

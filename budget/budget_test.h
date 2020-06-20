@@ -16,6 +16,7 @@ class TestBudgetSystem {
 public:
   static void TestAll();
 
+  static void TestInsertNewIncome();
   static void TestComputeIncome();
   static void TestEarn();
   static void TestPayTax();
