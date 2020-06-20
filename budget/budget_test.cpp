@@ -268,11 +268,8 @@ void TestBudgetSystem::TestComputeIncome() {
     BudgetSystem bs;
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
-    const PureIncome income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
 
-    const PureIncome expected{100};
-    //cout << "LOG: " << income << endl;
-    ASSERT_EQUAL(income, expected);
+    ASSERT_EQUAL(bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1}), PureIncome{100});
   }
 
   {
@@ -291,10 +288,8 @@ void TestBudgetSystem::TestComputeIncome() {
 
     bs.Earn({2000, 1, 1}, {2000, 1, 1}, 100);
     bs.Earn({2000, 1, 1}, {2000, 1, 2}, 100);
-    const PureIncome income = bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1});
 
-    const PureIncome expected{150};
-    ASSERT_EQUAL(income, expected);
+    ASSERT_EQUAL(bs.ComputeIncome({2000, 1, 1}, {2000, 1, 1}), PureIncome{150});
   }
 
   {

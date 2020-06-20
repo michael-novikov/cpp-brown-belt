@@ -14,23 +14,23 @@ bool Income::operator==(const Income& other) const {
     && value == other.value;
 }
 
-PureIncome BudgetSystem::ComputeIncome(const Date& from, const Date& to) {
+PureIncome BudgetSystem::ComputeIncome(const Date& from, const Date& to) const {
   PureIncome res{0};
 
   res += ComputeFromDateToBound(from);
 
-  const auto begin_ = incomes_.upper_bound(from);
-  const auto end_ = incomes_.lower_bound(Date::Next(to));
-  for (auto it = next(begin_); it != next(end_); ++it) {
+  const auto begin_ = ++incomes_.upper_bound(from);
+  const auto end_ = incomes_.upper_bound(Date::Next(to));
+  for (auto it = begin_; it != next(end_); ++it) {
     res += it->second;
   }
 
-  res += ComputeFromBoundToDate(to);
+  res -= ComputeFromDateToBound(Date::Next(to));
 
   return res;
 }
 
-PureIncome BudgetSystem::ComputeFromDateToBound(const Date& date) {
+PureIncome BudgetSystem::ComputeFromDateToBound(const Date& date) const {
   if (date == std::prev(incomes_.end())->first) {
     return PureIncome{0};
   }
@@ -44,11 +44,7 @@ PureIncome BudgetSystem::ComputeFromDateToBound(const Date& date) {
   return next->second * days_after / days_original;
 }
 
-PureIncome BudgetSystem::ComputeFromBoundToDate(const Date& date) {
-  if (date == incomes_.begin()->first) {
-    return PureIncome{0};
-  }
-
+PureIncome BudgetSystem::ComputeFromBoundToDate(const Date& date) const {
   auto next = incomes_.upper_bound(date);
   auto previous = std::prev(next);
 
