@@ -77,6 +77,35 @@ void AssertEqual(const T& t, const U& u, const std::string& hint = {}) {
   }
 }
 
+template<>
+void AssertEqual<double, double>(const double& t, const double& u, const std::string& hint) {
+  static const double equal_precision = 0.001;
+  if (!(abs(t - u) < equal_precision)) {
+    std::ostringstream os;
+    os << "Assertion failed: " << t << " != " << u;
+    if (!hint.empty()) {
+       os << " hint: " << hint;
+    }
+    throw std::runtime_error(os.str());
+  }
+}
+
+template <typename Callable>
+void AssertThrows(Callable f, const std::string& hint = {}) {
+  try {
+    f();
+  } catch (...) {
+    return;
+  }
+
+  std::ostringstream os;
+  os << "Assertion failed: must throw; ";
+  if (!hint.empty()) {
+     os << " hint: " << hint;
+  }
+  throw std::runtime_error(os.str());
+}
+
 inline void Assert(bool b, const std::string& hint) {
   AssertEqual(b, true, hint);
 }
@@ -109,17 +138,24 @@ private:
 };
 
 #define ASSERT_EQUAL(x, y) {            \
-  std::ostringstream _os;                    \
+  std::ostringstream _os;               \
   _os << (#x) << " != " << (#y) << ", " \
     << __FILE__ << ":" << __LINE__;     \
   AssertEqual((x), (y), _os.str());     \
 }
 
 #define ASSERT(x) {                     \
-  std::ostringstream _os;                    \
+  std::ostringstream _os;               \
   _os << (#x) << " is false, "          \
     << __FILE__ << ":" << __LINE__;     \
   Assert((x), _os.str());               \
+}
+
+#define ASSERT_THROWS(callable) {           \
+  std::ostringstream _os;                   \
+  _os << (#callable) << " doesn't throw, "  \
+    << __FILE__ << ":" << __LINE__;         \
+  AssertThrows((callable), _os.str());      \
 }
 
 #define RUN_TEST(tr, func) \
