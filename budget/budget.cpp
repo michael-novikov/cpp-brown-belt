@@ -14,6 +14,7 @@ using namespace std;
 enum class QueryType {
   COMPUTE_INCOME,
   EARN,
+  SPEND,
   PAY_TAX,
 
   NOT_SUPPORTED
@@ -22,6 +23,8 @@ enum class QueryType {
 QueryType ParseQueryType(string_view query) {
   if (query == "Earn") {
     return QueryType::EARN;
+  } else if (query == "Spend") {
+    return QueryType::SPEND;
   } else if (query == "ComputeIncome") {
     return QueryType::COMPUTE_INCOME;
   } else if (query == "PayTax") {
@@ -61,12 +64,19 @@ int main() {
         cout << static_cast<double>(budget_system.ComputeIncome(from, to)) << endl;
         break;
       case QueryType::EARN:
-        IncomeValue income;
-        cin >> income;
-        budget_system.Earn(from, to, income);
+        IncomeValue income_value;
+        cin >> income_value;
+        budget_system.Earn(from, to, income_value);
+        break;
+      case QueryType::SPEND:
+        IncomeValue spend_value;
+        cin >> spend_value;
+        budget_system.Spend(from, to, spend_value);
         break;
       case QueryType::PAY_TAX:
-        budget_system.PayTax(from, to);
+        size_t percent;
+        cin >> percent;
+        budget_system.PayTax(from, to, percent);
         break;
       case QueryType::NOT_SUPPORTED:
         cout << "Operation is not supported" << endl;
