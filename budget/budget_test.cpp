@@ -122,7 +122,7 @@ void TestBudgetSystem::TestInsertNewIncome() {
   {
     BudgetSystem bs;
 
-    bs.AddBoundDate({2000, 1, 2});
+    bs.AddBoundDate(bs.incomes_, {2000, 1, 2});
 
     const map<Date, PureIncome> expected{
       {{2000, 1, 1}, 0},
@@ -142,7 +142,7 @@ void TestBudgetSystem::TestInsertNewIncome() {
 
     bs.incomes_.emplace(Date{2000, 1, 11}, PureIncome{10});
 
-    bs.AddBoundDate({2000, 1, 6});
+    bs.AddBoundDate(bs.incomes_, {2000, 1, 6});
 
     const map<Date, PureIncome> expected{
       {{2000, 1, 1}, 0},
@@ -260,6 +260,51 @@ void TestBudgetSystem::TestPayTax(){
 
     const PureIncome expected_2{435};
     ASSERT_EQUAL(bs.incomes_.at({2000, 1, 3}), expected_2);
+  }
+
+  {
+    BudgetSystem bs;
+
+    const Date date{2000, 1, 1};
+
+    bs.Earn(date, date, 100);
+    bs.PayTax(date, date, 0);
+
+    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), 100);
+  }
+
+  {
+    BudgetSystem bs;
+
+    const Date date{2000, 1, 1};
+
+    bs.Earn(date, date, 100);
+    bs.PayTax(date, date, 1);
+
+    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), 99);
+  }
+
+  {
+    BudgetSystem bs;
+
+    const Date date{2000, 1, 1};
+
+    bs.Earn(date, date, 100);
+    bs.PayTax(date, date, 30);
+
+    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), 70);
+  }
+
+  {
+    BudgetSystem bs;
+
+    const Date date{2000, 1, 1};
+
+    bs.Earn(date, date, 100);
+    bs.PayTax(date, date, 50);
+    bs.PayTax(date, date, 10);
+
+    ASSERT_EQUAL(bs.incomes_.at({2000, 1, 2}), 45);
   }
 }
 
