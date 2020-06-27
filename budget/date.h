@@ -10,7 +10,7 @@
 #endif
 
 class Date {
-public:
+ public:
   Date(int year, int month, int day);
 
   time_t AsTimestamp() const;
@@ -33,8 +33,7 @@ public:
 #ifdef BUDGET_TEST
   friend class TestDate;
 #endif
-private:
-
+ private:
   int day_;
   int month_;
   int year_;
@@ -42,4 +41,4 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const Date& date);
 
-#endif // DATE_H
+#endif  // DATE_H

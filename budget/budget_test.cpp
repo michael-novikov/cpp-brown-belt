@@ -1,10 +1,10 @@
 #include "budget_test.h"
 
+#include <algorithm>
 #include <iterator>
+#include <numeric>
 #include <utility>
 #include <vector>
-#include <algorithm>
-#include <numeric>
 
 #include "budget_system.h"
 #include "date.h"
@@ -57,10 +57,8 @@ void TestDate::TestValidate() {
     vector<int> supported_years(100);
     iota(begin(supported_years), end(supported_years), 2000);
 
-    auto it = partition(
-      begin(supported_years), end(supported_years),
-      [] (int year) { return year % 4 == 0; }
-    );
+    auto it = partition(begin(supported_years), end(supported_years),
+                        [](int year) { return year % 4 == 0; });
 
     vector<int> leap_years(25);
     vector<int> non_leap_years(75);
@@ -78,8 +76,7 @@ void TestDate::TestValidate() {
   }
 }
 
-void TestDate::TestAsTimestamp() {
-}
+void TestDate::TestAsTimestamp() {}
 
 void TestDate::TestFromString() {
   {
@@ -125,10 +122,7 @@ void TestBudgetSystem::TestInsertNewIncome() {
     bs.AddBoundDate(bs.incomes_, {2000, 1, 2});
 
     const map<Date, PureIncome> expected{
-      {{2000, 1, 1}, 0},
-      {{2000, 1, 2}, 0},
-      {{2100, 1, 1}, 0}
-    };
+        {{2000, 1, 1}, 0}, {{2000, 1, 2}, 0}, {{2100, 1, 1}, 0}};
 
     ASSERT_EQUAL(bs.incomes_.size(), expected.size());
     for (const auto& [date, income] : bs.incomes_) {
@@ -144,12 +138,10 @@ void TestBudgetSystem::TestInsertNewIncome() {
 
     bs.AddBoundDate(bs.incomes_, {2000, 1, 6});
 
-    const map<Date, PureIncome> expected{
-      {{2000, 1, 1}, 0},
-      {{2000, 1, 6}, 5},
-      {{2000, 1, 11}, 5},
-      {{2100, 1, 1}, 0}
-    };
+    const map<Date, PureIncome> expected{{{2000, 1, 1}, 0},
+                                         {{2000, 1, 6}, 5},
+                                         {{2000, 1, 11}, 5},
+                                         {{2100, 1, 1}, 0}};
 
     ASSERT_EQUAL(bs.incomes_.size(), expected.size());
     for (const auto& [date, income] : bs.incomes_) {
@@ -192,12 +184,10 @@ void TestBudgetSystem::TestEarn() {
     bs.Earn(date_1, date_1, value_1);
     bs.Earn(date_1, date_2, value_2);
 
-    const map<Date, PureIncome> expected{
-      {{2000, 1, 1}, 0},
-      {{2000, 1, 2}, 2},
-      {{2000, 1, 3}, 1},
-      {{2100, 1, 1}, 0}
-    };
+    const map<Date, PureIncome> expected{{{2000, 1, 1}, 0},
+                                         {{2000, 1, 2}, 2},
+                                         {{2000, 1, 3}, 1},
+                                         {{2100, 1, 1}, 0}};
 
     ASSERT_EQUAL(bs.incomes_.size(), expected.size());
     for (const auto& [date, income] : bs.incomes_) {
@@ -212,12 +202,10 @@ void TestBudgetSystem::TestEarn() {
     bs.Earn({2000, 1, 1}, {2000, 1, 4}, 16);
     bs.Earn({2000, 1, 1}, {2000, 1, 2}, 8);
 
-    const map<Date, PureIncome> expected{
-      {{2000, 1, 1}, 0},
-      {{2000, 1, 3}, 16},
-      {{2000, 1, 5}, 8},
-      {{2100, 1, 1}, 0}
-    };
+    const map<Date, PureIncome> expected{{{2000, 1, 1}, 0},
+                                         {{2000, 1, 3}, 16},
+                                         {{2000, 1, 5}, 8},
+                                         {{2100, 1, 1}, 0}};
 
     ASSERT_EQUAL(bs.incomes_.size(), expected.size());
     for (const auto& [date, income] : bs.incomes_) {
@@ -227,7 +215,7 @@ void TestBudgetSystem::TestEarn() {
   }
 }
 
-void TestBudgetSystem::TestPayTax(){
+void TestBudgetSystem::TestPayTax() {
   {
     BudgetSystem bs;
     ASSERT_EQUAL(bs.incomes_.size(), 2u);

@@ -2,7 +2,7 @@
 #define BUDGET_TEST_H
 
 class TestDate {
-public:
+ public:
   static void TestAll();
 
   static void TestConstructor();
@@ -13,7 +13,7 @@ public:
 };
 
 class TestBudgetSystem {
-public:
+ public:
   static void TestAll();
 
   static void TestInsertNewIncome();
@@ -22,4 +22,4 @@ public:
   static void TestPayTax();
 };
 
-#endif // BUDGET_TEST_H
+#endif  // BUDGET_TEST_H
