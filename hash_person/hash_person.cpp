@@ -1,7 +1,10 @@
 #include "test_runner.h"
+#include <functional>
 #include <limits>
 #include <random>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
 using namespace std;
 
@@ -39,9 +42,9 @@ struct AddressHasher {
 
   const size_t coef {2'946'901};
 
-  hash<typeof(Address::city)> hash_city;
-  hash<typeof(Address::street)> hash_street;
-  hash<typeof(Address::building)> hash_building;
+  hash<string> hash_city;
+  hash<string> hash_street;
+  hash<int> hash_building;
 };
 
 struct PersonHasher {
@@ -54,9 +57,9 @@ struct PersonHasher {
 
   const size_t coef {2'946'901};
 
-  hash<typeof(Person::name)> hash_name;
-  hash<typeof(Person::height)> hash_height;
-  hash<typeof(Person::weight)> hash_weight;
+  hash<string> hash_name;
+  hash<int> hash_height;
+  hash<double> hash_weight;
   AddressHasher hash_address;
 };
 
