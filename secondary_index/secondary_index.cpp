@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <algorithm>
 
 using namespace std;
 
@@ -13,6 +14,12 @@ struct Record {
   string user;
   int timestamp;
   int karma;
+
+  struct DatabaseIterators {
+    multimap<int, Record*>::iterator it_by_timestamp;
+    multimap<int, Record*>::iterator it_by_karma;
+    multimap<string, Record*>::iterator it_by_user;
+  } db_iterators;
 
   bool operator==(const Record& other) const;
 };
@@ -41,7 +48,7 @@ public:
   void AllByUser(const string& user, Callback callback) const;
 
 private:
-  map<string, Record> data;
+  unordered_map<string, Record> data;
   multimap<int, Record*> ranged_by_timestamp;
   multimap<int, Record*> ranged_by_karma;
   multimap<string, Record*> ranged_by_user;
@@ -49,22 +56,18 @@ private:
   template<typename Key, typename Callback>
   void RangeBy(const multimap<Key, Record*>& ranged_by_key,
       const Key& low, const Key& high, Callback callback) const;
-
-  template <typename Key>
-  void RemoveFromRanged(multimap<Key, Record*>& ranged_by_key,
-      Key key, Record* value);
 };
 
 bool Database::Put(const Record& record) {
-  auto insert_info = data.try_emplace(record.id, record);
-  auto it = insert_info.first;
-  bool inserted = insert_info.second;
+  auto [it, inserted] = data.try_emplace(record.id, record);
 
   if (inserted) {
     auto address = std::addressof(it->second);
-    ranged_by_timestamp.emplace(record.timestamp, address);
-    ranged_by_karma.emplace(record.karma, address);
-    ranged_by_user.emplace(record.user, address);
+    it->second.db_iterators = {
+      ranged_by_timestamp.emplace(record.timestamp, address),
+      ranged_by_karma.emplace(record.karma, address),
+      ranged_by_user.emplace(record.user, address),
+    };
   }
 
   return inserted;
@@ -75,41 +78,31 @@ const Record* Database::GetById(const string& id) const {
   return it == end(data) ? nullptr : std::addressof(it->second);
 }
 
-template <typename Key>
-void Database::RemoveFromRanged(multimap<Key, Record*>& ranged_by_key,
-    Key key, Record* value) {
-  auto value_eq = [value] (const pair<Key, Record*>& elem) {
-    return elem.second == value;
-  };
-
-  auto eq_range = ranged_by_key.equal_range(key);
-  ranged_by_key.erase(
-    find_if(eq_range.first, eq_range.second, value_eq)
-  );
-}
-
 bool Database::Erase(const string& id) {
   auto it = data.find(id);
-  bool has_elem = it != end(data);
 
-  if (has_elem) {
-    auto& record = it->second;
-    auto address = std::addressof(record);
-    RemoveFromRanged(ranged_by_timestamp, record.timestamp, address);
-    RemoveFromRanged(ranged_by_karma, record.karma, address);
-    RemoveFromRanged(ranged_by_user, record.user, address);
+  if (it == end(data)) {
+    return false;
   }
 
+  ranged_by_timestamp.erase(it->second.db_iterators.it_by_timestamp);
+  ranged_by_karma.erase(it->second.db_iterators.it_by_karma);
+  ranged_by_user.erase(it->second.db_iterators.it_by_user);
   data.erase(it);
-  return has_elem;
+
+  return true;
 }
 
 template<typename Key, typename Callback>
 void Database::RangeBy(const multimap<Key, Record*>& ranged_by_key,
     const Key& low, const Key& high, Callback callback) const {
+  if (low > high) {
+    return;
+  }
+
   auto lb = ranged_by_key.lower_bound(low);
   auto ub = ranged_by_key.upper_bound(high);
-  for (auto it = lb; it != ub && callback(*it->second); ++it) {}
+  for (auto it = lb; it != ub && callback(*it->second); ++it);
 }
 
 template <typename Callback>
