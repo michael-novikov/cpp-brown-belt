@@ -95,11 +95,11 @@ public:
   }
 
   friend ostream& operator << (ostream& output, const HttpResponse& resp) {
-    static const string version = "HTTP/1.0";
+    static const string version = "HTTP/1.1";
     static const string content_length_header = "Content-Length";
 
     output
-      << version << ' ' << static_cast<size_t>(resp.code) << resp.code << '\n';
+      << version << ' ' << static_cast<size_t>(resp.code) << ' ' << resp.code << '\n';
 
     for (const auto& header : resp.headers) {
       if (header.name != content_length_header) {
@@ -107,7 +107,9 @@ public:
       }
     }
 
-    output << content_length_header << resp.content_length << '\n';
+    if (resp.GetContent().size() > 0) {
+      output << content_length_header << ": " << resp.content_length << '\n';
+    }
 
     output << '\n';
     output << resp.content;
