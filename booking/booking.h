@@ -28,6 +28,7 @@ public:
     provider_ = other.provider_;
 
     other.provider_ = nullptr;
+    return *this;
   }
 
   ~Booking() {
