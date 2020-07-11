@@ -1,6 +1,11 @@
 #include "domains.h"
 
 #include <iostream>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#include <string>
+#include <string_view>
 
 using namespace std;
 
