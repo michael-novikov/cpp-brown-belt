@@ -99,6 +99,7 @@ public:
         poly_.coeffs_.resize(degree_ + 1);
       }
       poly_.coeffs_[degree_] = x;
+      poly_.Shrink();
       return {degree_, poly_};
     }
 
