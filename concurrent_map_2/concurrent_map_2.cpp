@@ -21,6 +21,7 @@ public:
   };
 
   struct ReadAccess {
+    lock_guard<mutex> guard;
     const V& ref_to_value;
   };
 
@@ -37,7 +38,7 @@ public:
     }
 
     ReadAccess GetValue(const K& key) const {
-        return {data.at(key)};
+        return {lock_guard(bucket_mutex), data.at(key)};
     }
   };
 
