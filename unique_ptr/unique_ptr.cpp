@@ -10,15 +10,17 @@ class UniquePtr {
 private:
   T* data;
 
-  UniquePtr(const UniquePtr&);
-  UniquePtr& operator = (const UniquePtr&);
 public:
+  UniquePtr(const UniquePtr&) = delete;
+  UniquePtr& operator = (const UniquePtr&) = delete;
+
   UniquePtr(): data(nullptr) {}
+  UniquePtr(nullptr_t): data(nullptr) {}
   UniquePtr(T * ptr): data(ptr) {}
-  UniquePtr(UniquePtr&& other): data(move(other.data)) {}
+  UniquePtr(UniquePtr&& other): data(other.Release()) {}
   UniquePtr& operator = (nullptr_t);
   UniquePtr& operator = (UniquePtr&& other);
-  ~UniquePtr() { delete data; }
+  ~UniquePtr() { Reset(); }
 
   T& operator * () const { return *data; }
 
@@ -26,25 +28,24 @@ public:
 
   T * Release();
 
+  void Reset(nullptr_t = nullptr);
   void Reset(T * ptr);
 
   void Swap(UniquePtr& other);
 
-  T * Get() const { return data; }
+  T * Get() const;
 };
 
 template <typename T>
 UniquePtr<T>& UniquePtr<T>::operator = (nullptr_t) {
-  T * old_data = data;
-  data = nullptr;
-  delete old_data;
+  Reset();
+  return *this;
 }
 
 template <typename T>
 UniquePtr<T>& UniquePtr<T>::operator = (UniquePtr&& other) {
-  T * old_data = data;
-  data = move(other.data);
-  delete old_data;
+  UniquePtr<T>(other.Release()).Swap(*this);
+  return *this;
 }
 
 template <typename T>
@@ -55,15 +56,31 @@ T * UniquePtr<T>::Release() {
 }
 
 template <typename T>
+void UniquePtr<T>::Reset(nullptr_t) {
+  T * tmp = data;
+  data = nullptr;
+  if (tmp) {
+    delete tmp;
+  }
+}
+
+template <typename T>
 void UniquePtr<T>::Reset(T * ptr) {
-  T * old_data = data;
+  T * tmp = data;
   data = ptr;
-  delete old_data;
+  if (tmp) {
+    delete tmp;
+  }
 }
 
 template <typename T>
 void UniquePtr<T>::Swap(UniquePtr& other) {
   swap(data, other.data);
+}
+
+template <typename T>
+T * UniquePtr<T>::Get() const {
+  return data;
 }
 
 struct Item {
@@ -98,10 +115,12 @@ void TestLifetime() {
     UniquePtr<Item> ptr(new Item);
     ASSERT_EQUAL(Item::counter, 1);
 
-    auto rawPtr = ptr.Release();
+    ASSERT(ptr.Get() != nullptr);
+    auto releasedRawPtr = ptr.Release();
+    ASSERT(ptr.Get() == nullptr);
     ASSERT_EQUAL(Item::counter, 1);
 
-    delete rawPtr;
+    delete releasedRawPtr;
     ASSERT_EQUAL(Item::counter, 0);
   }
   ASSERT_EQUAL(Item::counter, 0);
@@ -114,8 +133,14 @@ void TestGetters() {
   ASSERT_EQUAL(ptr->value, 42);
 }
 
+void TestGettersNullptr() {
+  UniquePtr<Item> ptr;
+  ASSERT(ptr.Get() == nullptr);
+}
+
 int main() {
   TestRunner tr;
   RUN_TEST(tr, TestLifetime);
   RUN_TEST(tr, TestGetters);
+  RUN_TEST(tr, TestGettersNullptr);
 }

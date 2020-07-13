@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Release)
 
 set(this_project unique_ptr)
+add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 set(utility ~/workspace/cpp-brown-belt/utility)
 include_directories(${utility})
