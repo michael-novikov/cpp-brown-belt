@@ -83,14 +83,20 @@ void TestIsSubdomainReversed() {
 
 void TestIsBannedDomain() {
   // TODO: remove any algorithms from unit test;
-  const vector<string> banned_domains = [] {
-    vector<string> tmp = { "ya.ru", "maps.me", "m.ya.ru", "com" };
-    for (string& domain : tmp) {
-      reverse(begin(domain), end(domain));
+  vector<string> banned_domains  = { "ya.ru", "maps.me", "m.ya.ru", "com" };
+
+  for (string& domain : banned_domains) {
+    reverse(begin(domain), end(domain));
+  }
+  sort(begin(banned_domains), end(banned_domains));
+
+  size_t insert_pos = 0;
+  for (string& domain : banned_domains) {
+    if (insert_pos == 0 || !IsSubdomainReversed(domain, banned_domains[insert_pos - 1])) {
+      swap(banned_domains[insert_pos++], domain);
     }
-    sort(begin(tmp), end(tmp));
-    return tmp;
-  }();
+  }
+  banned_domains.resize(insert_pos);
 
   vector<string> positive_tests = {"ya.ru", "ya.com", "m.maps.me", "moscow.m.ya.ru", "maps.com" };
   vector<string> negative_tests = {"maps.ru", "ya.ya"};
@@ -106,12 +112,70 @@ void TestIsBannedDomain() {
   }
 }
 
+void TestIsBannedDomain2() {
+  // TODO: remove any algorithms from unit test;
+  vector<string> banned_domains = { "ya.ya", "ya.ru", "ya.com" };
+
+  for (string& domain : banned_domains) {
+    reverse(begin(domain), end(domain));
+  }
+  sort(begin(banned_domains), end(banned_domains));
+
+  size_t insert_pos = 0;
+  for (string& domain : banned_domains) {
+    if (insert_pos == 0 || !IsSubdomainReversed(domain, banned_domains[insert_pos - 1])) {
+      swap(banned_domains[insert_pos++], domain);
+    }
+  }
+  banned_domains.resize(insert_pos);
+
+  vector<string> positive_tests  = {"ha.ya.ya", "te.ya.ru", "su.ya.com"};
+  vector<string> negative_tests = {"haya.ya", "teya.ru", "suya.com"};
+
+  for (auto domain : positive_tests) {
+    reverse(begin(domain), end(domain));
+    ASSERT(IsBannedDomain(domain, banned_domains));
+  }
+
+  for (auto domain : negative_tests) {
+    reverse(begin(domain), end(domain));
+    ASSERT(!IsBannedDomain(domain, banned_domains));
+  }
+}
+
+void TestIsBannedDomain3() {
+  // TODO: remove any algorithms from unit test;
+  vector<string> banned_domains = { "b.c", "a.b.c" };
+
+  for (string& domain : banned_domains) {
+    reverse(begin(domain), end(domain));
+  }
+  sort(begin(banned_domains), end(banned_domains));
+
+  size_t insert_pos = 0;
+  for (string& domain : banned_domains) {
+    if (insert_pos == 0 || !IsSubdomainReversed(domain, banned_domains[insert_pos - 1])) {
+      swap(banned_domains[insert_pos++], domain);
+    }
+  }
+  banned_domains.resize(insert_pos);
+
+  vector<string> positive_tests  = { "d.b.c" };
+
+  for (auto domain : positive_tests) {
+    reverse(begin(domain), end(domain));
+    ASSERT(IsBannedDomain(domain, banned_domains));
+  }
+}
+
 void RunTests() {
   TestRunner tr;
   RUN_TEST(tr, TestReadDomains);
   RUN_TEST(tr, TestIsSubdomain);
   RUN_TEST(tr, TestIsSubdomainReversed);
   RUN_TEST(tr, TestIsBannedDomain);
+  RUN_TEST(tr, TestIsBannedDomain2);
+  RUN_TEST(tr, TestIsBannedDomain3);
 }
 
 int main() {

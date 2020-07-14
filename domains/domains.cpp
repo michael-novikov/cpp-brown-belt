@@ -29,7 +29,7 @@ bool IsSubdomainReversed(string_view subdomain, string_view domain) {
       return false;
     }
   }
-  return (j == domain.size()) && (i == j || subdomain[i] == '.');
+  return (j == domain.size()) && (i == subdomain.size() || (i < subdomain.size() && subdomain[i] == '.'));
 }
 
 
