@@ -51,7 +51,7 @@ bool Date::Validate(int year, int month, int day) {
          (year == 2100 && month == 1 && day == 1);
 }
 
-Date Date::FromString(std::string str) {
+Date Date::FromString(const std::string& str) {
   istringstream in{str};
   int year, month, day;
 

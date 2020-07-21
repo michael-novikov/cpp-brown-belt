@@ -14,18 +14,13 @@
 using IncomeValue = size_t;
 using PureIncome = double;
 
-struct Income {
-  Date from;
-  Date to;
-  IncomeValue value;
-
-  bool operator==(const Income& other) const;
-};
-
 class BudgetSystem {
  public:
   BudgetSystem() = default;
 
+  PureIncome AccumulateIncome(const std::map<Date, PureIncome> &tr_report,
+                                const Date &from,
+                                const Date &to) const;
   PureIncome ComputeIncome(const Date& from, const Date& to) const;
   void Earn(const Date& from, const Date& to, IncomeValue value);
   void Spend(const Date& from, const Date& to, IncomeValue value);
@@ -38,18 +33,19 @@ class BudgetSystem {
   friend class TestBudgetSystem;
 #endif
  private:
-  std::map<Date, PureIncome> incomes_ = {{Date{2000, 1, 1}, PureIncome{0}},
-                                         {Date{2100, 1, 1}, PureIncome{0}}};
-  std::map<Date, PureIncome> spendings_ = {{Date{2000, 1, 1}, PureIncome{0}},
-                                           {Date{2100, 1, 1}, PureIncome{0}}};
+  using TransactionReport = std::map<Date, PureIncome>;
+  TransactionReport incomes_ = {{Date{2000, 1, 1}, PureIncome{0}},
+                                {Date{2100, 1, 1}, PureIncome{0}}};
+  TransactionReport spendings_ = {{Date{2000, 1, 1}, PureIncome{0}},
+                                  {Date{2100, 1, 1}, PureIncome{0}}};
 
   enum class Transaction {
-    EARNING,
+    EARNING = 0,
     SPENDING,
   };
+  const std::vector<TransactionReport*> transaction_reports = {&incomes_, &spendings_};
 
-  void UpdateTransactions(const Date& from, const Date& to, IncomeValue value,
-                          Transaction tr);
+  void UpdateTransactions(Transaction tr, Date from, Date to, PureIncome value);
 
   std::map<Date, PureIncome>::iterator AddBoundDate(
       std::map<Date, PureIncome>& transaction_history, const Date& date);

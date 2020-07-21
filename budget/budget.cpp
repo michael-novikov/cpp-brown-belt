@@ -61,8 +61,7 @@ int main() {
 
     switch (ParseQueryType(query_type)) {
       case QueryType::COMPUTE_INCOME:
-        cout << static_cast<double>(budget_system.ComputeIncome(from, to))
-             << endl;
+        cout << budget_system.ComputeIncome(from, to) << endl;
         break;
       case QueryType::EARN:
         IncomeValue income_value;

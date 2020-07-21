@@ -16,7 +16,7 @@ class Date {
   time_t AsTimestamp() const;
 
   static bool Validate(int year, int month, int day);
-  static Date FromString(std::string str);
+  static Date FromString(const std::string& str);
   static int ComputeDaysDiff(const Date& date_to, const Date& date_from);
   static Date Next(const Date& date);
 
