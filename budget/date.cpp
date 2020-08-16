@@ -20,7 +20,8 @@ Date Date::Next(const Date& date) {
 
 Date::Date(int year, int month, int day) {
   if (!Validate(year, month, day)) {
-    const string bad_date = to_string(year) + delim + to_string(month) + delim + to_string(day);
+    const string bad_date =
+        to_string(year) + delim + to_string(month) + delim + to_string(day);
     throw std::domain_error("Wrong date format: " + bad_date);
   }
   year_ = year;
@@ -30,12 +31,12 @@ Date::Date(int year, int month, int day) {
 
 time_t Date::AsTimestamp() const {
   std::tm t;
-  t.tm_sec   = 0;
-  t.tm_min   = 0;
-  t.tm_hour  = 0;
-  t.tm_mday  = day_;
-  t.tm_mon   = month_ - 1;
-  t.tm_year  = year_ - 1900;
+  t.tm_sec = 0;
+  t.tm_min = 0;
+  t.tm_hour = 0;
+  t.tm_mday = day_;
+  t.tm_mon = month_ - 1;
+  t.tm_year = year_ - 1900;
   t.tm_isdst = 0;
   return mktime(&t);
 }
@@ -45,13 +46,12 @@ bool Date::Validate(int year, int month, int day) {
     return year % 4 == 0;
   }
 
-  return (year >= 2000 && year <= 2099
-    && month >= 1 && month <= 12
-    && day >= 1 && day <= 31)
-    || (year == 2100 && month == 1 && day == 1);
+  return (year >= 2000 && year <= 2099 && month >= 1 && month <= 12 &&
+          day >= 1 && day <= 31) ||
+         (year == 2100 && month == 1 && day == 1);
 }
 
-Date Date::FromString(std::string str) {
+Date Date::FromString(const std::string& str) {
   istringstream in{str};
   int year, month, day;
 
@@ -67,9 +67,7 @@ Date Date::FromString(std::string str) {
 const std::string Date::delim = "-";
 
 bool Date::operator==(const Date& other) const {
-  return year_ == other.year_
-    && month_ == other.month_
-    && day_ == other.day_;
+  return year_ == other.year_ && month_ == other.month_ && day_ == other.day_;
 }
 
 bool Date::operator<(const Date& other) const {
@@ -81,6 +79,6 @@ bool Date::operator<=(const Date& other) const {
 }
 
 std::ostream& operator<<(std::ostream& os, const Date& date) {
-  return os << date.Year() << Date::delim << date.Month() << Date::delim << date.Day();
+  return os << date.Year() << Date::delim << date.Month() << Date::delim
+            << date.Day();
 }
-

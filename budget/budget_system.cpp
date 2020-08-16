@@ -2,103 +2,92 @@
 
 #include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <ostream>
 #include <stdexcept>
-#include <string>
-#include <iterator>
 
 #include "date.h"
 
-bool Income::operator==(const Income& other) const {
-  return from == other.from
-    && to == other.to
-    && value == other.value;
+PureIncome BudgetSystem::AccumulateIncome(const std::map<Date, PureIncome> &tr_report,
+                                          const Date &from,
+                                          const Date &to) const {
+    PureIncome res{0};
+    const auto begin_ = next(tr_report.upper_bound(from));
+    const auto end_ = next(tr_report.upper_bound(Date::Next(to)));
+
+    res += ComputeFromDateToBound(tr_report, from);
+    res +=
+        std::accumulate(begin_, end_, PureIncome{0},
+                        [](PureIncome sum, auto p) { return sum + p.second; });
+    res -= ComputeFromDateToBound(tr_report, Date::Next(to));
+
+    return res;
 }
 
 PureIncome BudgetSystem::ComputeIncome(const Date& from, const Date& to) const {
-  auto accumulate_income = [this](const std::map<Date, PureIncome>& transaction_history, const Date& from, const Date& to) -> PureIncome {
-    PureIncome res{0};
-    const auto begin_ = next(transaction_history.upper_bound(from));
-    const auto end_ = next(transaction_history.upper_bound(Date::Next(to)));
-
-    res += ComputeFromDateToBound(transaction_history, from);
-    res += std::accumulate(begin_, end_, PureIncome{0}, [](PureIncome sum, auto p) { return sum + p.second; });
-    res -= ComputeFromDateToBound(transaction_history, Date::Next(to));
-
-    return res;
-  };
-
-  return accumulate_income(incomes_, from, to) - accumulate_income(spendings_, from, to);
+  return AccumulateIncome(incomes_, from, to) -
+         AccumulateIncome(spendings_, from, to);
 }
 
-PureIncome BudgetSystem::ComputeFromDateToBound(const std::map<Date, PureIncome>& transaction_history, const Date& date) const {
-  if (date == std::prev(transaction_history.end())->first) {
-    return PureIncome{0};
+PureIncome BudgetSystem::ComputeFromDateToBound(
+    const std::map<Date, PureIncome>& transaction_history,
+    const Date& date) const {
+  auto nearest = transaction_history.lower_bound(date);
+  if (nearest->first == date) {
+    return std::next(nearest)->second;
   }
 
-  auto next = transaction_history.upper_bound(date);
-  auto previous = std::prev(next);
+  auto previous = std::prev(nearest);
 
-  int days_original = Date::ComputeDaysDiff(next->first, previous->first);
-  int days_after = Date::ComputeDaysDiff(next->first, date);
+  int days_original = Date::ComputeDaysDiff(nearest->first, previous->first);
+  int days_after = Date::ComputeDaysDiff(nearest->first, date);
 
-  return next->second * days_after / days_original;
+  return nearest->second * days_after / days_original;
 }
 
-std::map<Date, PureIncome>::iterator BudgetSystem::AddBoundDate(std::map<Date, PureIncome>& transaction_history, const Date& date) {
-  if (auto it = transaction_history.find(date); it != std::end(transaction_history)) {
-    return it;
+std::map<Date, PureIncome>::iterator BudgetSystem::AddBoundDate(
+    std::map<Date, PureIncome>& transaction_history, const Date& date) {
+  auto nearest = transaction_history.lower_bound(date);
+  if (nearest->first == date) {
+    return nearest;
   }
 
-  auto nearest = transaction_history.upper_bound(date);
   auto previous = std::prev(nearest);
 
   int days_original = Date::ComputeDaysDiff(nearest->first, previous->first);
   int days_before = Date::ComputeDaysDiff(date, previous->first);
-  int days_after = Date::ComputeDaysDiff(nearest->first, date);
 
   PureIncome value = nearest->second * days_before / days_original;
-  nearest->second = nearest->second * days_after / days_original;
+  nearest->second -= value;
 
   return transaction_history.emplace(date, value).first;
 }
 
 void BudgetSystem::Earn(const Date& from, const Date& to, IncomeValue value) {
-  if (Date::ComputeDaysDiff(to, from) < 0) {
-    return;
-  }
-
-  return UpdateTransactions(from, to, value, Transaction::EARNING);
+  return UpdateTransactions(Transaction::EARNING, from, to, value);
 }
 
 void BudgetSystem::Spend(const Date& from, const Date& to, IncomeValue value) {
-  if (Date::ComputeDaysDiff(to, from) < 0) {
-    return;
-  }
-
-  return UpdateTransactions(from, to, value, Transaction::SPENDING);
+  return UpdateTransactions(Transaction::SPENDING, from, to, value);
 }
 
-void BudgetSystem::UpdateTransactions(const Date& from, const Date& to, IncomeValue value, Transaction tr) {
-  auto* transaction_history = &incomes_;
-  if (tr == Transaction::SPENDING) {
-    transaction_history = &spendings_;
-  }
+void BudgetSystem::UpdateTransactions(Transaction tr, Date from, Date to, PureIncome value) {
+  TransactionReport* tr_report = transaction_reports[static_cast<int>(tr)];
 
-  auto begin_ = AddBoundDate(*transaction_history, from);
-  auto end_ = AddBoundDate(*transaction_history, Date::Next(to));
+  auto begin_ = AddBoundDate(*tr_report, from);
+  auto end_ = AddBoundDate(*tr_report, Date::Next(to));
 
   const int days = Date::ComputeDaysDiff(end_->first, begin_->first);
-  auto cur = from;
   for (auto it = std::next(begin_); it != std::next(end_); ++it) {
-    int days_in_interval = Date::ComputeDaysDiff(it->first, cur);
-    it->second += (static_cast<PureIncome>(value) * days_in_interval) / days;
-    cur = it->first;
+    int days_in_interval = Date::ComputeDaysDiff(it->first, from);
+    it->second += (value * days_in_interval) / days;
+    from = it->first;
   }
 }
 
-PureIncome BudgetSystem::ComputeIncomeAfterTax(PureIncome income, size_t percent) {
+PureIncome BudgetSystem::ComputeIncomeAfterTax(PureIncome income,
+                                               size_t percent) {
   if (percent > 100) {
     throw std::out_of_range("Percent must be less or equal than 100");
   }
@@ -107,10 +96,6 @@ PureIncome BudgetSystem::ComputeIncomeAfterTax(PureIncome income, size_t percent
 }
 
 void BudgetSystem::PayTax(const Date& from, const Date& to, size_t percent) {
-  if (Date::ComputeDaysDiff(to, from) < 0) {
-    return;
-  }
-
   auto before_tax = AddBoundDate(incomes_, from);
   auto last_payment = AddBoundDate(incomes_, Date::Next(to));
 
