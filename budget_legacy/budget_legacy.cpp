@@ -1,5 +1,7 @@
 #include <array>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -104,11 +106,13 @@ size_t ComputeDayIndex(const Date& date) {
 }
 
 
-array<double, VERTEX_COUNT> tree_values, tree_add, tree_factor;
+array<double, VERTEX_COUNT> tree_values, tree_spent_values, tree_add, tree_spent, tree_factor;
 
 void Init() {
   tree_values.fill(0);
+  tree_spent_values.fill(0);
   tree_add.fill(0);
+  tree_spent.fill(0);
   tree_factor.fill(1);
 }
 
@@ -117,11 +121,14 @@ void Push(size_t v, size_t l, size_t r) {
     if (w < VERTEX_COUNT) {
       tree_factor[w] *= tree_factor[v];
       (tree_add[w] *= tree_factor[v]) += tree_add[v];
+      tree_spent[w] += tree_spent[v];
       (tree_values[w] *= tree_factor[v]) += tree_add[v] * (r - l) / 2;
+      tree_spent_values[w] += tree_spent[v] * (r - l) / 2;
     }
   }
   tree_factor[v] = 1;
   tree_add[v] = 0;
+  tree_spent[v] = 0;
 }
 
 double ComputeSum(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
@@ -134,6 +141,18 @@ double ComputeSum(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
   }
   return ComputeSum(v * 2, l, (l + r) / 2, ql, qr)
       + ComputeSum(v * 2 + 1, (l + r) / 2, r, ql, qr);
+}
+
+double ComputeSpent(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
+  if (v >= VERTEX_COUNT || qr <= l || r <= ql) {
+    return 0;
+  }
+  Push(v, l, r);
+  if (ql <= l && r <= qr) {
+    return tree_spent_values[v];
+  }
+  return ComputeSpent(v * 2, l, (l + r) / 2, ql, qr)
+      + ComputeSpent(v * 2 + 1, (l + r) / 2, r, ql, qr);
 }
 
 void Add(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
@@ -153,19 +172,37 @@ void Add(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
       + (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1] : 0);
 }
 
-void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
+void Spend(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
   if (v >= VERTEX_COUNT || qr <= l || r <= ql) {
     return;
   }
   Push(v, l, r);
   if (ql <= l && r <= qr) {
-    tree_factor[v] *= 0.87;
-    tree_add[v] *= 0.87;
-    tree_values[v] *= 0.87;
+    tree_spent[v] += value;
+    tree_spent_values[v] += value * (r - l);
     return;
   }
-  Multiply(v * 2, l, (l + r) / 2, ql, qr);
-  Multiply(v * 2 + 1, (l + r) / 2, r, ql, qr);
+  Spend(v * 2, l, (l + r) / 2, ql, qr, value);
+  Spend(v * 2 + 1, (l + r) / 2, r, ql, qr, value);
+  tree_spent_values[v] =
+      (v * 2 < VERTEX_COUNT ? tree_spent_values[v * 2] : 0)
+      + (v * 2 + 1 < VERTEX_COUNT ? tree_spent_values[v * 2 + 1] : 0);
+}
+
+void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr, size_t percentage) {
+  if (v >= VERTEX_COUNT || qr <= l || r <= ql) {
+    return;
+  }
+  double factor = 1.0 - percentage / 100.0;
+  Push(v, l, r);
+  if (ql <= l && r <= qr) {
+    tree_factor[v] *= factor;
+    tree_add[v] *= factor;
+    tree_values[v] *= factor;
+    return;
+  }
+  Multiply(v * 2, l, (l + r) / 2, ql, qr, percentage);
+  Multiply(v * 2 + 1, (l + r) / 2, r, ql, qr, percentage);
   tree_values[v] =
       (v * 2 < VERTEX_COUNT ? tree_values[v * 2] : 0)
       + (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1] : 0);
@@ -192,13 +229,21 @@ int main() {
     auto idx_to = ComputeDayIndex(Date::FromString(date_to_str)) + 1;
 
     if (query_type == "ComputeIncome") {
-      cout << ComputeSum(1, 0, DAY_COUNT_P2, idx_from, idx_to) << endl;
+      auto total = ComputeSum(1, 0, DAY_COUNT_P2, idx_from, idx_to)
+          - ComputeSpent(1, 0, DAY_COUNT_P2, idx_from, idx_to);
+      cout << total << endl;
     } else if (query_type == "PayTax") {
-      Multiply(1, 0, DAY_COUNT_P2, idx_from, idx_to);
+      size_t percentage;
+      cin >> percentage;
+      Multiply(1, 0, DAY_COUNT_P2, idx_from, idx_to, percentage);
     } else if (query_type == "Earn") {
       double value;
       cin >> value;
       Add(1, 0, DAY_COUNT_P2, idx_from, idx_to, value / (idx_to - idx_from));
+    } else if (query_type == "Spend") {
+      double value;
+      cin >> value;
+      Spend(1, 0, DAY_COUNT_P2, idx_from, idx_to, value / (idx_to - idx_from));
     }
   }
 
