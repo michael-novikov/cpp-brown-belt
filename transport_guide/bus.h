@@ -23,7 +23,7 @@ public:
   std::optional<std::pair<double, double>> RouteLength() { return route_length_; }
   bool ContainsStop(const std::string& stop_name) const { return stop_names_.count(stop_name); }
 
-  void SetRouteLength(double road_length, double direct_length) { route_length_ = {road_length, direct_length}; }
+  void SetRouteLength(size_t road_length, double direct_length) { route_length_ = {road_length, direct_length}; }
 
   static BusRoute CreateRawBusRoute(RouteNumber bus_no, const std::vector<std::string>& stop_names);
   static BusRoute CreateCyclicBusRoute(RouteNumber bus_no, const std::vector<std::string>& stop_names);
@@ -31,5 +31,5 @@ private:
   RouteNumber number_;
   std::vector<std::string> stops_;
   std::unordered_set<std::string> stop_names_;
-  std::optional<std::pair<double, double>> route_length_;
+  std::optional<std::pair<size_t, double>> route_length_;
 };

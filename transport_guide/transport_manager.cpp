@@ -29,11 +29,11 @@ void TransportManager::AddStop(const string& name, double latitude, double longi
 }
 
 void TransportManager::AddBus(const RouteNumber& bus_no, const std::vector<std::string>& stop_names, bool cyclic) {
-  buses_[bus_no] = cyclic ? BusRoute::CreateCyclicBusRoute(bus_no, stop_names)
+  buses_[string{bus_no}] = cyclic ? BusRoute::CreateCyclicBusRoute(bus_no, stop_names)
     : BusRoute::CreateRawBusRoute(bus_no, stop_names);
 }
 
-std::pair<double, double> TransportManager::ComputeBusRouteLength(const RouteNumber& route_number) {
+std::pair<size_t, double> TransportManager::ComputeBusRouteLength(const RouteNumber& route_number) {
   if (!buses_.count(route_number)) {
     return {0, 0};
   }
@@ -42,7 +42,7 @@ std::pair<double, double> TransportManager::ComputeBusRouteLength(const RouteNum
     return route_length.value();
   }
 
-  double distance_road{0.0};
+  size_t distance_road{0};
   double distance_direct{0.0};
   vector<const Stop*> bus_stops;
   for (const auto& stop_name : buses_[route_number].Stops()) {
@@ -61,13 +61,12 @@ std::pair<double, double> TransportManager::ComputeBusRouteLength(const RouteNum
   return {distance_road, distance_direct};
 }
 
-std::string TransportManager::GetStopInfo(const string& stop_name) {
-  ostringstream out;
-  out << "Stop " << stop_name << ": ";
-
+StopInfo TransportManager::GetStopInfo(const string& stop_name, size_t request_id) {
   if (!stops_.count(stop_name)) {
-    out << "not found";
-    return out.str();
+    return StopInfo{
+      .request_id = request_id,
+      .error_message = "not found",
+    };
   }
 
   set<RouteNumber> buses_with_stop;
@@ -77,36 +76,28 @@ std::string TransportManager::GetStopInfo(const string& stop_name) {
     }
   }
 
-  if (buses_with_stop.empty()) {
-    out << "no buses";
-    return out.str();
-  }
-
-  out << "buses";
-  for (const RouteNumber& route_number : buses_with_stop) {
-    out << " " << route_number;
-  }
-
-  return out.str();
+  return StopInfo{
+    .buses = vector<string>{begin(buses_with_stop), end(buses_with_stop)},
+    .request_id = request_id,
+  };
 }
 
-std::string TransportManager::GetBusInfo(const RouteNumber& bus_no) {
-  ostringstream out;
-  out << "Bus " << bus_no << ": ";
-
+BusInfo TransportManager::GetBusInfo(const RouteNumber& bus_no, size_t request_id) {
   if (!buses_.count(bus_no)) {
-    out << "not found";
-    return out.str();
+    return BusInfo{
+      .request_id = request_id,
+      .error_message = "not found",
+    };
   }
 
   const auto& bus = buses_.at(bus_no);
-  const auto bus_stops = bus.Stops();
   const auto [road_length, direct_length] = ComputeBusRouteLength(bus_no);
 
-  out << bus_stops.size() << " stops on route";
-  out << ", " << bus.UniqueStopNumber() << " unique stops";
-  out << ", " << fixed << setprecision(6) << road_length << " route length";
-  out << ", " << fixed << setprecision(6) << road_length / direct_length << " curvature";
-
-  return out.str();
+  return BusInfo {
+    .route_length = road_length,
+    .request_id = request_id,
+    .curvature = road_length / direct_length,
+    .stop_count = bus.Stops().size(),
+    .unique_stop_count = bus.UniqueStopNumber(),
+  };
 }

@@ -19,12 +19,16 @@ set(headers
   stop_manager.h
   transport_manager.h
   transport_manager_command.h
+  json.h
+  json_parser.h
   )
 
 set(sources
   bus.cpp
   stop_manager.cpp
   transport_manager.cpp
+  json.cpp
+  json_parser.cpp
   ${this_project}.cpp
   )
 
