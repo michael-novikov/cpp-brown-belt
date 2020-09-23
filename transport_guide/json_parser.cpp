@@ -1,6 +1,8 @@
 #include "json_parser.h"
 
 #include "json.h"
+#include "transport_manager_command.h"
+#include <variant>
 
 using namespace std;
 using namespace Json;
@@ -19,10 +21,10 @@ unique_ptr<InCommand> ReadInputCommand(const Node& node) {
     const auto& longitude_node = command["longitude"];
     double longitude = holds_alternative<int>(longitude_node) ? longitude_node.AsInt() : longitude_node.AsDouble();
 
-    std::unordered_map<std::string, double> distances;
+    std::unordered_map<std::string, unsigned int> distances;
     auto distances_nodes = command["road_distances"].AsMap();
     for (const auto& [to, road_length] : distances_nodes) {
-      distances[to] = static_cast<double>(road_length.AsInt());
+      distances[to] = static_cast<unsigned int>(road_length.AsInt());
     }
 
     return make_unique<NewStopCommand>(string{stop_name}, latitude, longitude,
@@ -52,6 +54,10 @@ unique_ptr<OutCommand> ReadOutputCommand(const Node& node) {
   } else if (type == "Bus") {
     auto route_number = command["name"].AsString();
     return make_unique<BusDescriptionCommand>(route_number, request_id);
+  } else if (type == "Route") {
+    auto from = command["from"].AsString();
+    auto to = command["to"].AsString();
+    return make_unique<RouteCommand>(from, to, request_id);
   } else {
     throw std::invalid_argument("Unsupported command");
   }
@@ -72,10 +78,17 @@ TransportManagerCommands ReadCommands(std::istream& s) {
     commands.output_commands.push_back(ReadOutputCommand(node));
   }
 
+  auto routing_settings = root["routing_settings"].AsMap();
+  commands.routing_settings.bus_wait_time = static_cast<unsigned int>(routing_settings["bus_wait_time"].AsInt());
+
+  auto bus_velocity_node = routing_settings["bus_velocity"];
+  commands.routing_settings.bus_velocity =
+    holds_alternative<int>(bus_velocity_node) ? bus_velocity_node.AsInt() : bus_velocity_node.AsDouble();
+
   return commands;
 }
 
-void PrintResults(const std::vector<StopInfo>& stop_info, const std::vector<BusInfo>& bus_info, std::ostream& output) {
+void PrintResults(const std::vector<StopInfo>& stop_info, const std::vector<BusInfo>& bus_info, const std::vector<RouteInfo>& route_data, std::ostream& output) {
   vector<Node> result;
 
   for (const auto& bus : bus_info) {
@@ -112,6 +125,39 @@ void PrintResults(const std::vector<StopInfo>& stop_info, const std::vector<BusI
       stop_dict["buses"] = Node(buses);
     }
     result.push_back(Node(move(stop_dict)));
+  }
+
+  for (const auto& route : route_data) {
+    map<string, Node> route_dict = {
+      {"request_id", Node(static_cast<int>(route.request_id))},
+    };
+
+    if (route.error_message.has_value()) {
+      route_dict["error_message"] = Node(route.error_message.value());
+    }
+    else {
+      vector<Node> items;
+      for (const auto& item : route.items) {
+        map<string, Node> activity_node;
+        if (holds_alternative<WaitActivity>(item)) {
+          auto wait_activity = get<WaitActivity>(item);
+          activity_node["type"] = wait_activity.type;
+          activity_node["time"] = static_cast<int>(wait_activity.time);
+          activity_node["stop_name"] = wait_activity.stop_name;
+        }
+        else {
+          auto bus_activity = get<BusActivity>(item);
+          activity_node["type"] = bus_activity.type;
+          activity_node["time"] = static_cast<double>(bus_activity.time);
+          activity_node["bus"] = bus_activity.bus;
+          activity_node["span_count"] = static_cast<int>(bus_activity.span_count);
+        }
+        items.push_back(activity_node);
+      }
+      route_dict["items"] = items;
+      route_dict["total_time"] = route.total_time;
+    }
+    result.push_back(Node(move(route_dict)));
   }
 
   Node root{result};

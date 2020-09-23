@@ -21,6 +21,8 @@ set(headers
   transport_manager_command.h
   json.h
   json_parser.h
+  graph.h
+  router.h
   )
 
 set(sources

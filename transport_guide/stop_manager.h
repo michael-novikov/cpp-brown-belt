@@ -18,10 +18,11 @@ private:
 
 struct Stop {
 public:
-  Stop(std::string name, Coordinates coordinates); 
-  Stop() = default; 
+  Stop(std::string name, Coordinates coordinates = {});
+  Stop() = default;
   std::string Name() const { return name_; }
   Coordinates StopCoordinates() const { return coordinates_; }
+  void SetCoordinates(Coordinates coordinates) { coordinates_ = coordinates; }
 
 private:
   std::string name_;

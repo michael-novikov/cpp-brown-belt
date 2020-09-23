@@ -8,6 +8,7 @@
 #include <limits>
 #include <optional>
 #include <memory>
+#include <variant>
 
 enum class InCommandType {
   NEW_STOP,
@@ -19,6 +20,7 @@ enum class InCommandType {
 enum class OutCommandType {
   STOP_DESCRIPTION,
   BUS_DESCRIPTION,
+  ROUTE,
 
   NUM_COMMANDS,
 };
@@ -41,14 +43,20 @@ private:
   OutCommandType type_{OutCommandType::NUM_COMMANDS};
 };
 
+struct RoutingSettingsCommand {
+  unsigned int bus_wait_time;
+  double bus_velocity;
+};
+
 struct TransportManagerCommands {
   std::vector<std::unique_ptr<InCommand>> input_commands;
   std::vector<std::unique_ptr<OutCommand>> output_commands;
+  RoutingSettingsCommand routing_settings;
 };
 
 struct NewStopCommand : public InCommand {
 public: 
-  NewStopCommand(std::string name, double latitude, double longitude, std::unordered_map<std::string, double> distances)
+  NewStopCommand(std::string name, double latitude, double longitude, std::unordered_map<std::string, unsigned int> distances)
     : InCommand(InCommandType::NEW_STOP)
     , name_(move(name))
     , latitude_(latitude)
@@ -66,7 +74,7 @@ private:
   std::string name_;
   double latitude_;
   double longitude_;
-  std::unordered_map<std::string, double> distances_;
+  std::unordered_map<std::string, unsigned int> distances_;
 };
 
 struct NewBusCommand : public InCommand {
@@ -135,6 +143,33 @@ private:
   size_t request_id_{std::numeric_limits<size_t>::max()};
 };
 
+struct RouteCommand : public OutCommand {
+public: 
+  RouteCommand(std::string from, std::string to)
+    : OutCommand(OutCommandType::ROUTE)
+    , from_(move(from))
+    , to_(move(to))
+  {
+  }
+
+  RouteCommand(std::string from, std::string to, size_t request_id)
+    : OutCommand(OutCommandType::ROUTE)
+    , from_(move(from))
+    , to_(move(to))
+    , request_id_(request_id)
+  {
+  }
+
+  std::string From() const { return from_; }
+  std::string To() const { return to_; }
+  size_t RequestId() const { return request_id_; }
+
+private:
+  std::string from_;
+  std::string to_;
+  size_t request_id_{std::numeric_limits<size_t>::max()};
+};
+
 struct StopInfo {
   std::vector<std::string> buses;
   size_t request_id;
@@ -147,5 +182,26 @@ struct BusInfo {
   double curvature;
   size_t stop_count;
   size_t unique_stop_count;
+  std::optional<std::string> error_message;
+};
+
+struct WaitActivity {
+  std::string type;
+  //double time;
+  unsigned int time;
+  std::string stop_name;
+};
+
+struct BusActivity {
+  std::string type;
+  double time;
+  std::string bus;
+  unsigned int span_count;
+};
+
+struct RouteInfo {
+  size_t request_id;
+  double total_time;
+  std::vector<std::variant<WaitActivity, BusActivity>> items;
   std::optional<std::string> error_message;
 };
